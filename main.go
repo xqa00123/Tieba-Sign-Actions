@@ -25,7 +25,7 @@ func main() {
 func exec() {
 	bdusss := os.Getenv("BDUSS")
 	if bdusss == "" {
-		log.Fatal("环境变量必须设置BDUSS")
+		log.Println("环境变量必须设置BDUSS")
 	}
 	bdussArr := strings.Split(bdusss, "\n")
 	c := 0
@@ -421,7 +421,7 @@ func GetFid(tbName string) string {
 //未关注此吧{"no":3110004,"error":"","data":[]}
 func CelebritySupport(bduss string, tbName string, fid string, tbs string) string {
 	if fid == "" && tbName == "" {
-		log.Fatal("至少包含贴吧名字、FID中的一个")
+		log.Println("至少包含贴吧名字、FID中的一个")
 	} else if fid == "" && tbName != "" {
 		fid = GetFid(tbName)
 	}
