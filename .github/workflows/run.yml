@@ -1,0 +1,26 @@
+name: Tieba-Sign-Actions
+on:
+  push:
+    branches: [ master ]
+  schedule:
+    - cron: 0 8,16,23 * * *
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.14.x]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Sign
+        env:
+          BDUSS: ${{ secrets.BDUSS }}
+          TELEGRAM_APITOKEN: ${{ secrets.TELEGRAM_APITOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: go run main.go

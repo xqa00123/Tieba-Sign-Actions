@@ -1,0 +1,49 @@
+# Tieba-Sign-Actions
+基于Github Actions实现的无服务器永久免费云签
+- [x] 贴吧签到   
+- [x] 知道签到
+- [x] 文库签到
+- [x] 名人堂助攻
+- [x] 一日三次签到（0点，7点，16点）
+- [x] 特殊吧补签，防止漏签
+- [x] 签到结果电报（telegram）通知
+
+# 使用说明
+## 注册一个github账号，已有请跳过
+[注册教程](https://jingyan.baidu.com/article/86fae346e723303c49121abb.html)
+## 一、Fork此仓库
+打开https://github.com/libsgh/Tieba-Sign-Actions
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/1.png)
+## 二、设置 BUDSS
+### BDUSS 获取
+1. 电脑浏览器（例如chrome）打开百度首页并登录(最好用隐身模式，防止退出登录导致bduss失效)，或打开开发者模式network中查找百度首页请求，在右侧的请求中找到cookie中的bduss并复制
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-1-1.gif)
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-1-2.png)
+2. 在线获取工具,扫码方式更安全
+- http://bduss.imyfan.com/
+- http://noki.tk/bduss
+- http://tool.cccyun.cc/tool/bduss/index2.html
+### 设置 Secrets
+1. 打开Tieba-Sign-Actions > Settings > Secrets > New secret
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-1.png)
+2. 输入上一步获取的BDUSS，**每行一个BDUSS，对应一个签到账号**
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-2.png)
+3. 【结果通知，可选】添加**TELEGRAM_APITOKEN**,telegram的机器人的api token
+
+    如何创建telegram机器人，请参考：https://blog.csdn.net/weixin_42776979/article/details/88239086
+4. 【结果通知，可选】添加**TELEGRAM_CHAT_ID**,telegram的通知的用户ID，可以在@getidsbot中输入<code>/start</code>获取
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-4.png)
+## 三、启用 Action
+1. 点击**Action**，再点击**I understand my workflows, go ahead and enable them**  
+2. 修改任意文件后提交一次
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/3.png)
+## 四、查看运行结果
+Actions > Tieba-Sign-Actions
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/4-1.png)
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/4-2.png)
+
+此后，将会在每天00:00、07:00、16:00各执行一次签到（注意服务器时区差8小时）
+
+若有需求，可以在[.github/workflows/run.yml]中自行修改
+
+如果要停止**Action**，请删除**Fork**,如果要终止签到任务请删除**Secrets**中的**BDUSS**
