@@ -44,6 +44,8 @@ Actions > Tieba-Sign-Actions
 
 此后，将会在每天00:00、07:00、16:00各执行一次签到（注意服务器时区差8小时）
 
+修改任一文件并push就会触发一次签到
+
 若有需求，可以在[.github/workflows/run.yml]中自行修改
 
 如果要停止**Action**，请删除**Fork**,如果要终止签到任务请删除**Secrets**中的**BDUSS**
