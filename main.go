@@ -107,7 +107,7 @@ func TelegramNOtifyResult(ms string) {
 }
 
 func GenerateSignResult(t int, rs []SignTable) string {
-	result := "贴吧ID: " + strconv.Itoa(len(rs))
+	s := "贴吧ID: " + strconv.Itoa(len(rs))
 	total := []string{}
 	Signed := []string{}
 	Bq := []string{}
@@ -116,7 +116,6 @@ func GenerateSignResult(t int, rs []SignTable) string {
 	Support := []string{}
 	wk := []string{}
 	zd := []string{}
-	s := ""
 	for i, r := range rs {
 		if t == 0 {
 			s += "                " + strconv.Itoa(i+1) + ". " + HideName(r.Name) + "\n"
@@ -140,7 +139,7 @@ func GenerateSignResult(t int, rs []SignTable) string {
 	s += "名人堂助攻 :" + strings.Join(Support, "‖") + "\n"
 	s += "文库:" + strings.Join(wk, "‖") + "\n"
 	s += "知道:" + strings.Join(zd, "‖")
-	return result
+	return s
 }
 
 //隐藏id部分内容，保护隐私
