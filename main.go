@@ -107,7 +107,7 @@ func TelegramNOtifyResult(ms string) {
 }
 
 func GenerateSignResult(t int, rs []SignTable) string {
-	s := "贴吧ID: " + strconv.Itoa(len(rs))
+	s := "贴吧ID: " + strconv.Itoa(len(rs)) + "\n"
 	total := []string{}
 	Signed := []string{}
 	Bq := []string{}
