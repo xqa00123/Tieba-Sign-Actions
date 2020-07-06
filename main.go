@@ -61,7 +61,7 @@ func exec() {
 				} else if signR.ErrorCode == "2280007" || signR.ErrorCode == "340011" || signR.ErrorCode == "1989004" {
 					//签到服务忙、签到过快、数据加载失败1
 					//三种情况需要重签
-					bqCount += bq(tb.Name, tb.Id, bduss, tbs)
+					bqCount += Bq(tb.Name, tb.Id, bduss, tbs)
 				}
 				sup := CelebritySupport(bduss, "", tb.Id, tbs)
 				if sup == "已助攻" || sup == "助攻成功" {
@@ -82,15 +82,13 @@ func exec() {
 			rs = append(rs, st[0])
 		}
 	}
-	msgs := GenerateSignResult(0, rs)
-	for _, m := range msgs {
-		fmt.Println(m + "\n")
-	}
+	ms := GenerateSignResult(0, rs)
+	fmt.Println(ms + "\n")
 	//telegram通知
 	TelegramNOtifyResult(GenerateSignResult(1, rs))
 }
 
-func TelegramNOtifyResult(msgs []string) {
+func TelegramNOtifyResult(ms string) {
 	token := os.Getenv("TELEGRAM_APITOKEN")
 	chectId := os.Getenv("TELEGRAM_CHAT_ID")
 	if token == "" || chectId == "" {
@@ -103,37 +101,67 @@ func TelegramNOtifyResult(msgs []string) {
 		bot.Debug = false
 		chectIdInt64, _ := strconv.ParseInt(chectId, 10, 64)
 		log.Printf("Authorized on account %s", bot.Self.UserName)
-		for _, m := range msgs {
-			msg := tgbotapi.NewMessage(chectIdInt64, m)
-			bot.Send(msg)
-		}
-
+		msg := tgbotapi.NewMessage(chectIdInt64, ms)
+		bot.Send(msg)
 	}
 }
 
-func GenerateSignResult(t int, rs []SignTable) []string {
-	result := []string{}
-	for _, r := range rs {
-		s := ""
+func GenerateSignResult(t int, rs []SignTable) string {
+	result := "贴吧ID: " + strconv.Itoa(len(rs))
+	total := []string{}
+	Signed := []string{}
+	Bq := []string{}
+	Excep := []string{}
+	Black := []string{}
+	Support := []string{}
+	wk := []string{}
+	zd := []string{}
+	s := ""
+	for i, r := range rs {
 		if t == 0 {
-			s += "贴吧ID:" + "***\n"
+			s += "                " + strconv.Itoa(i+1) + ". " + HideName(r.Name) + "\n"
 		} else {
-			s += "贴吧ID:" + r.Name + "\n"
+			s += "                " + strconv.Itoa(i+1) + ". " + r.Name + "\n"
 		}
-		s += "总数:" + strconv.Itoa(r.Total) + "\n"
-		s += "已签到:" + strconv.Itoa(r.Signed) + "\n"
-		s += "补签:" + strconv.Itoa(r.Bq) + "\n"
-		s += "异常:" + strconv.Itoa(r.Excep) + "\n"
-		s += "黑名单:" + strconv.Itoa(r.Black) + "\n"
-		s += "名人堂助攻 :" + strconv.Itoa(r.Support) + "\n"
-		s += "文库:" + r.Wenku + "\n"
-		s += "知道:" + r.Zhidao
-		result = append(result, s)
+		total = append(total, strconv.Itoa(r.Total))
+		Signed = append(Signed, strconv.Itoa(r.Signed))
+		Bq = append(Bq, strconv.Itoa(r.Bq))
+		Excep = append(Excep, strconv.Itoa(r.Excep))
+		Black = append(Black, strconv.Itoa(r.Black))
+		Support = append(Support, strconv.Itoa(r.Support))
+		wk = append(wk, r.Wenku)
+		zd = append(zd, r.Zhidao)
 	}
+	s += "总数:" + strings.Join(total, "‖") + "\n"
+	s += "已签到:" + strings.Join(Signed, "‖") + "\n"
+	s += "补签:" + strings.Join(Bq, "‖") + "\n"
+	s += "异常:" + strings.Join(Excep, "‖") + "\n"
+	s += "黑名单:" + strings.Join(Black, "‖") + "\n"
+	s += "名人堂助攻 :" + strings.Join(Support, "‖") + "\n"
+	s += "文库:" + strings.Join(wk, "‖") + "\n"
+	s += "知道:" + strings.Join(zd, "‖")
 	return result
 }
 
-func bq(tbName string, fid string, bduss string, tbs string) int {
+//隐藏id部分内容，保护隐私
+func HideName(name string) string {
+	arr := strings.Split(name, "")
+	if len(arr) == 1 {
+		return "*"
+	} else if len(arr) == 2 {
+		return arr[0] + "*"
+	} else if len(arr) > 2 {
+		rs := arr[0]
+		for i := 1; i <= len(arr)-1; i++ {
+			rs += "*"
+		}
+		rs += arr[len(arr)-1]
+		return rs
+	}
+	return "-"
+}
+
+func Bq(tbName string, fid string, bduss string, tbs string) int {
 	time.Sleep(time.Duration(5) * time.Second)
 	signR := SignOneTieBa(tbName, fid, bduss, tbs)
 	if signR.ErrorCode == "0" || signR.ErrorCode == "160002" || signR.ErrorCode == "199901" {
