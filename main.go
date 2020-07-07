@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/modood/table"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -86,8 +85,7 @@ func exec() {
 	ms := GenerateSignResult(0, rs)
 	fmt.Println(ms + "\n")
 	//telegram通知
-	table.Table(rs)
-	TelegramNOtifyResult(table.Table(rs))
+	TelegramNOtifyResult(GenerateSignResult(1, rs))
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -102,15 +100,19 @@ func TelegramNOtifyResult(ms string) {
 		}
 		bot.Debug = false
 		chectIdInt64, _ := strconv.ParseInt(chectId, 10, 64)
-		//log.Printf("Authorized on account %s", bot.Self.UserName)
-		msg := tgbotapi.NewMessage(chectIdInt64, "<pre>"+ms+"</pre>")
-		msg.ParseMode = "HTML"
+		//log.Println("Authorized on account %s", bot.Self.UserName)
+		msg := tgbotapi.NewMessage(chectIdInt64, ms)
 		bot.Send(msg)
 	}
 }
 
 func GenerateSignResult(t int, rs []SignTable) string {
 	s := "贴吧ID: " + strconv.Itoa(len(rs)) + "\n"
+	if len(rs) == 1 && t == 0 {
+		s = "贴吧ID: " + HideName(rs[0].Name) + "\n"
+	} else if len(rs) == 1 && t == 1 {
+		s = "贴吧ID: " + rs[0].Name + "\n"
+	}
 	total := []string{}
 	Signed := []string{}
 	Bq := []string{}
@@ -120,10 +122,12 @@ func GenerateSignResult(t int, rs []SignTable) string {
 	wk := []string{}
 	zd := []string{}
 	for i, r := range rs {
-		if t == 0 {
-			s += "                " + strconv.Itoa(i+1) + ". " + HideName(r.Name) + "\n"
-		} else {
-			s += "                " + strconv.Itoa(i+1) + ". " + r.Name + "\n"
+		if len(rs) > 1 {
+			if t == 0 {
+				s += "\t" + strconv.Itoa(i+1) + ". " + HideName(r.Name) + "\n"
+			} else {
+				s += "\t" + strconv.Itoa(i+1) + ". " + r.Name + "\n"
+			}
 		}
 		total = append(total, strconv.Itoa(r.Total))
 		Signed = append(Signed, strconv.Itoa(r.Signed))
@@ -154,7 +158,7 @@ func HideName(name string) string {
 		return arr[0] + "*"
 	} else if len(arr) > 2 {
 		rs := arr[0]
-		for i := 1; i <= len(arr)-1; i++ {
+		for i := 1; i < len(arr)-1; i++ {
 			rs += "*"
 		}
 		rs += arr[len(arr)-1]
@@ -318,17 +322,18 @@ func GetLikedTiebas(bduss string, uid string) ([]LikedTieba, error) {
 		var likedApiRep LikedApiRep
 		if err := jsoniter.Unmarshal([]byte(body), &likedApiRep); err != nil {
 			log.Println("err: ", err)
-		}
-		for _, likeTb := range likedApiRep.ForumList.Gconforum {
-			likedTiebaList = append(likedTiebaList, likeTb)
-		}
-		for _, likeTb := range likedApiRep.ForumList.NonGconforum {
-			likedTiebaList = append(likedTiebaList, likeTb)
-		}
-		if likedApiRep.HasMore == "0" {
 			break
+		} else {
+			for _, likeTb := range likedApiRep.ForumList.Gconforum {
+				likedTiebaList = append(likedTiebaList, likeTb)
+			}
+			for _, likeTb := range likedApiRep.ForumList.NonGconforum {
+				likedTiebaList = append(likedTiebaList, likeTb)
+			}
+			if likedApiRep.HasMore == "0" {
+				break
+			}
 		}
-
 	}
 	return likedTiebaList, nil
 }
