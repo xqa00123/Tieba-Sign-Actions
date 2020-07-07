@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/modood/table"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -85,7 +86,8 @@ func exec() {
 	ms := GenerateSignResult(0, rs)
 	fmt.Println(ms + "\n")
 	//telegram通知
-	TelegramNOtifyResult(GenerateSignResult(1, rs))
+	table.Table(rs)
+	TelegramNOtifyResult(table.Table(rs))
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -100,8 +102,9 @@ func TelegramNOtifyResult(ms string) {
 		}
 		bot.Debug = false
 		chectIdInt64, _ := strconv.ParseInt(chectId, 10, 64)
-		log.Printf("Authorized on account %s", bot.Self.UserName)
-		msg := tgbotapi.NewMessage(chectIdInt64, ms)
+		//log.Printf("Authorized on account %s", bot.Self.UserName)
+		msg := tgbotapi.NewMessage(chectIdInt64, "<pre>"+ms+"</pre>")
+		msg.ParseMode = "HTML"
 		bot.Send(msg)
 	}
 }
