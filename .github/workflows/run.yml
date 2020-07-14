@@ -24,4 +24,5 @@ jobs:
           BDUSS: ${{ secrets.BDUSS }}
           TELEGRAM_APITOKEN: ${{ secrets.TELEGRAM_APITOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: go run main.go

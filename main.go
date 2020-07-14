@@ -635,12 +635,12 @@ func WriteSignData(rs []SignTable) {
 	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec}
 	signJson, _ := jsoniter.MarshalToString(sd)
 	//ioutil.WriteFile("data/sign.json", []byte(signJson),0666)
-	ghToken := os.Getenv("GITHUB_TOKEN")
+	ghToken := os.Getenv("GH_TOKEN")
 	op := os.Getenv("OWNER_REPO")
 	if len(ghToken) > 0 && len(op) > 0 {
 		pushToGithub(signJson, ghToken, op)
 	} else {
-		fmt.Println("没有配置$GITHUB_TOKEN或$OWNER_REPO")
+		fmt.Println("没有配置$GH_TOKEN或$OWNER_REPO")
 	}
 
 }
