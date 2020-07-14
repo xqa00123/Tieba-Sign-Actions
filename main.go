@@ -624,8 +624,8 @@ func WriteSignData(rs []SignTable) {
 				st.SignTime = item.SignTime
 			} else {
 				//cookie失效并且未查找到记录
-				item.Name = HideName(item.Name)
 			}
+			item.Name = HideName(item.Name)
 			tvc++
 		}
 		ttc += st.Total

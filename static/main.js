@@ -26,7 +26,6 @@ function init(key){
                     var html = "<div class=\"mdui-panel-item\">"+
                         "                <div class=\"mdui-panel-item-header\">"+
                         "                    <div class=\"mdui-panel-item-title\">"+
-                        (i+1) +  ".&nbsp;"+
                         "                        <div class=\"mdui-chip\">"+
                         "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
                         "                            <span class=\"mdui-chip-title ";
@@ -47,11 +46,11 @@ function init(key){
                         "            <div class=\"mdui-panel-item-body\">"+
                         "                <p class=\"mdui-text-color-blue-900\"><b>签到</b>: "+(item.signed+item.bq)+"/"+item.total+"</p>"+
                         "                <p class=\"mdui-text-color-red-900\"><b>异常或黑名单</b>: "+(item.excep+item.black)+"</p>"+
-                        "                <p class=\"mdui-text-color-red-900\"><b>名人堂助攻</b>: "+item.support+"</p>"+
+                        "                <p class=\"mdui-text-color-blue-900\"><b>名人堂助攻</b>: "+item.support+"</p>"+
+                        "                <p><b>文库</b>:"+item.wenku+"</p>"+
+                        "                <p><b>知道</b>:"+item.zhidao+"</p>"+
                         "                <p><b>最近一次签到</b>: "+getDateDiff(item.sign_time)+"</p>"+
                         "                <p><b>耗时</b>: "+getDuration(item.timespan)+"</p>"+
-                        "                <p><b>文库</b>:"+item.wenku+"</p>"+
-                        "               <p><b>知道</b>:"+item.zhidao+"</p>"+
                         "            </div>"+
                         "        </div>";
                     htmStr+=html;
@@ -66,9 +65,6 @@ function init(key){
                         return true;
                     }
                     var html =" <tr>"+
-                        "            <td>"+
-                        (i+1) +  ".&nbsp;"+
-                        "            </td>"+
                         "            <td>"+
                         "                <div class=\"mdui-chip\">"+
                         "                    <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
