@@ -599,6 +599,7 @@ func WriteSignData(rs []SignTable) {
 	tsc := 0
 	tvc := 0
 	tbec := 0
+	tsuc := 0
 	for _, st := range rs {
 		tuc++
 		if st.IsValid == false {
@@ -630,8 +631,9 @@ func WriteSignData(rs []SignTable) {
 		ttc += st.Total
 		tsc += st.Signed + st.Bq
 		tbec += st.Black + st.Excep
+		tsuc += st.Support
 	}
-	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec}
+	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec, tsuc}
 	signJson, _ := jsoniter.MarshalToString(sd)
 	//ioutil.WriteFile("data/sign.json", []byte(signJson),0666)
 	ghToken := os.Getenv("GH_TOKEN")
@@ -651,6 +653,7 @@ type SignData struct {
 	Tsc  int `json:"tsc"`
 	Tvc  int `json:"tvc"`
 	Tbec int `json:"tbec"`
+	Tsuc int `json:"tsuc"`
 }
 
 func GetByMd5(old []SignTable, bdussMd5 string) (*SignTable, error) {
