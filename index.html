@@ -1,10 +1,247 @@
-<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-cmn-Hans">
 <head>
     <meta charset="UTF-8">
-    <title>TieBa-Sign-Actions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=no"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <title>Tieba-Sign-Actions</title>
+    <link rel="stylesheet" href="static/main.css">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/mdui/0.4.3/css/mdui.min.css">
+    <link href="https://cdn.bootcss.com/ionicons/4.5.6/css/ionicons.min.css" rel="stylesheet">
+    <link href="//at.alicdn.com/t/font_1129307_87xftfvgqh9.css" rel="stylesheet">
+    <link rel="shortcut icon" href="static/favicon.ico"/>
 </head>
-<body>
-    <h1>hello world</h1>
+<body class="mdui-appbar-with-toolbar mdui-theme-primary-indigo mdui-theme-accent-pink mdui-loaded mdui-bottom-nav-fixed">
+    <header class="mdui-appbar mdui-appbar-fixed">
+        <div class="mdui-toolbar mdui-color-indigo">
+            <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-drawer="{target: '#main-drawer', swipe: true}"><i class="mdui-icon material-icons">menu</i></a>
+            <a href="/" class="mdui-typo-headline mdui-hidden-xs">Tieba-Sign-Actions</a>
+            <a href="/" class="mdui-typo-title mdui-hidden-sm-up">TSA</a>
+        </div>
+    </header>
+    <!--<div class="mdui-drawer" id="main-drawer">
+        <a class="mdui-list-item mdui-ripple mdui-text-color-theme mdui-list-item-active" href="/">
+            <ion-icon class="mdui-list-item-icon mdui-icon material-icons mdui-text-color-teal" name="logo-chrome"></ion-icon><div class="mdui-list-item-content">签到列表</div>
+        </a>
+        <a class="mdui-list-item mdui-ripple mdui-text-color-theme" href="/">
+            <ion-icon class="mdui-list-item-icon mdui-icon material-icons mdui-text-color-teal" name="logo-chrome"></ion-icon><div class="mdui-list-item-content">封禁列表</div>
+        </a>
+    </div>-->
+    <div class="mdui-container" style="margin-bottom: 80px;">
+        <div class="mdui-row-xs-2 mdui-row-lg-3" style="margin-bottom: 10px;margin-top: 20px">
+            <div class="mdui-col">
+                <a href="javascript:;" class="mdui-ripple mdui-text-color-theme">
+                    <i class="mdui-icon material-icons">&#xe87c;</i>
+                    <label id="lb_uc"></label>
+                </a>
+            </div>
+            <div class="mdui-col">
+                <a href="javascript:;" class="mdui-ripple mdui-text-color-deep-purple">
+                    <i class="mdui-icon material-icons">&#xe850;</i>
+                    <label id="lb_tc"></label>
+                </a>
+            </div>
+            <div class="mdui-col">
+                <a href="javascript:;" class="mdui-ripple mdui-text-color-green">
+                    <i class="mdui-icon material-icons">done_all</i>
+                    <label id="lb_sc"></label>
+                </a>
+            </div>
+            <div class="mdui-col">
+                <a href="javascript:;" class="mdui-ripple mdui-text-color-red">
+                    <i class="mdui-icon material-icons">&#xe87c;</i>
+                    <label id="lb_vc"></label>
+                </a>
+            </div>
+            <div class="mdui-col">
+                <a href="javascript:;" class="mdui-ripple mdui-ripple mdui-text-color-red">
+                    <i class="mdui-icon material-icons">&#xe000;</i>
+                    <label id="lb_bec"></label>
+                </a>
+            </div>
+        </div>
+        <div class="mdui-table-fluid">
+            <div class="mdui-appbar">
+                <div class="mdui-toolbar">
+                    <div class="mdui-toolbar-spacer"></div>
+                    <div class="mdui-textfield mdui-textfield-expandable mdui-float-left">
+                        <input id="currPage" type="hidden" value="${currPage!'1'}"/>
+                        <button class="mdui-textfield-icon mdui-btn mdui-btn-icon" mdui-tooltip="{content: '搜索'}"><i class="mdui-icon material-icons">search</i></button>
+                        <input id="inputkey" class="mdui-textfield-input" type="text" value="${key!''}" placeholder="请输入贴吧用户名、用户uid或绑定QQ"/>
+                        <button class="mdui-textfield-close mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">close</i></button>
+                    </div>
+            </div>
+        </div>
+        <div id="mobel_table" class="mdui-panel mdui-panel-gapless" mdui-panel="{accordion: true}"></div>
+        <table id="pc_table" class="mdui-table mdui-table-hoverable">
+            <thead>
+            <tr>
+                <th>序号</th>
+                <th>用户</th>
+                <th>签到</th>
+                <th>异常或黑名单</th>
+                <th>知道</th>
+                <th>文库</th>
+                <th>签到状态</th>
+                <th>最近一次签到</th>
+                <th>耗时</th>
+            </tr>
+            </thead>
+            <tbody id="pc_body">
+            </tbody>
+        </table>
+    </div>
+    </div>
 </body>
+<script src="https://cdn.bootcss.com/ionicons/4.5.6/ionicons.js"></script>
+<script src="https://cdn.bootcss.com/clipboard.js/2.0.4/clipboard.min.js"></script>
+<script src="https://cdn.bootcss.com/mdui/0.4.3/js/mdui.min.js"></script>
+<script>
+    var $$ = mdui.JQ;
+    $$(function () {
+        $$.ajax({
+            method: 'GET',
+            url: 'data/sign.json',
+            success: function (data) {
+                data = eval('(' + data + ')');
+                console.log(data);
+                $$("#lb_uc").html("用户数<span> "+data.tuc+"</span>");
+                $$("#lb_tc").html("贴吧数<span> "+data.ttc+"</span>");
+                $$("#lb_sc").html("已签到<span> "+data.tsc+"</span>");
+                $$("#lb_vc").html("Cookie失效<span> "+data.tvc+"</span>");
+                $$("#lb_bec").html("异常或黑名单<span> "+data.tbec+"</span>");
+                if((navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i))) {
+                    $$('#mobel_table').show();
+                    $$('#pc_table').hide();
+                    var htmStr = ""
+                    $$.each(data.Sts, function (i, item) {
+                        var html = "<div class=\"mdui-panel-item\">"+
+                            "                <div class=\"mdui-panel-item-header\">"+
+                            "                    <div class=\"mdui-panel-item-title\">"+
+                            (i+1) +  ".&nbsp;"+
+                            "                        <div class=\"mdui-chip\">"+
+                            "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
+                            "                            <span class=\"mdui-chip-title ";
+                            if(!item.is_valid){
+                                html +="mdui-text-color-red";
+                            }
+                          html +="\">"+
+                            item.name+
+                            "                            </span>"+
+                            "                        </div>"+
+                            "                    </div>"+
+                            "                    <div class=\"mdui-panel-item-summary\">"+getDateDiff(item.sign_time)+"</div>"+
+                            "                    <div class=\"mdui-panel-item-summary\">"+
+                            "                        <i class=\"mdui-icon material-icons mdui-text-color-green\">check_box</i>"+
+                            "                   </div>"+
+                            "                <i class=\"mdui-panel-item-arrow mdui-icon material-icons\">keyboard_arrow_down</i>"+
+                            "            </div>"+
+                            "            <div class=\"mdui-panel-item-body\">"+
+                            "                <p class=\"mdui-text-color-blue-900\"><b>签到</b>: "+(item.signed+item.bq)+"/"+item.total+"</p>"+
+                            "                <p class=\"mdui-text-color-red-900\"><b>异常或黑名单</b>: "+(item.excep+item.black)+"</p>"+
+                            "                <p><b>最近一次签到</b>: "+getDateDiff(item.sign_time)+"</p>"+
+                            "                <p><b>耗时</b>: "+getDuration(item.timespan)+"</p>"+
+                            "                <p><b>文库</b>:"+item.wenku+"</p>"+
+                            "               <p><b>知道</b>:"+item.zhidao+"</p>"+
+                            "            </div>"+
+                            "        </div>";
+                        htmStr+=html;
+                    });
+                    $$('#mobel_table').html(htmStr);
+                }else{
+                    $$('#mobel_table').hide();
+                    $$('#pc_table').show();
+                    var htmStr = ""
+                    $$.each(data.Sts, function (i, item) {
+                        var html =" <tr>"+
+                            "            <td>"+
+                            (i+1) +  ".&nbsp;"+
+                            "            </td>"+
+                            "            <td>"+
+                            "                <div class=\"mdui-chip\">"+
+                            "                    <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
+                            "                    <span class=\"mdui-chip-title <#if bean.cookie_valid ==0>mdui-text-color-red</#if>\">"+
+                            item.name+
+                            "                    </span>"+
+                            "                </div>"+
+                            "            </td>"+
+                            "            <td><div class=\"mdui-text-color-blue-900\">"+(item.signed+item.bq)+"/"+item.total+"</div></td>"+
+                            "            <td>"+
+                            "                <div class=\"mdui-text-color-red-900\">"+(item.excep+item.black)+"</div></td>"+
+                            "            <td>"+
+                            "                <div class=\"mdui-text-color-black-900\">"+item.zhidao+"</div></td>"+
+                            "            <td>"+
+                            "                <div class=\"mdui-text-color-black-900\">"+item.wenku+"</div></td>"+
+                            "            <td>"+
+                            "                <i class=\"mdui-icon material-icons mdui-text-color-green\">check_box</i>"+
+                            "            </td>"+
+                            "            <td>"+getDateDiff(item.sign_time)+"</td>"+
+                            "            <td>"+getDuration(item.timespan)+"</td>"+
+                            "        </tr>";
+                        htmStr+=html;
+                    });
+                    $$('#pc_body').html(htmStr);
+                }
+            }
+        });
+    });
+    mdui.mutation();
+    function getDateDiff (dateTimeStamp) {
+        var result = ''
+        var minute = 1000 * 60
+        var hour = minute * 60
+        var day = hour * 24
+        var month = day * 30
+        var now = new Date().getTime()
+        var diffValue = now - dateTimeStamp
+        if (diffValue < 0) return
+        var monthC = diffValue / month
+        var weekC = diffValue / (7 * day)
+        var dayC = diffValue / day
+        var hourC = diffValue / hour
+        var minC = diffValue / minute
+        if (monthC >= 1) {
+            result = "" + parseInt(monthC) + "月前"
+        }
+        else if (weekC>=1) {
+            result = "" + parseInt(weekC) + "周前"
+        }
+        else if (dayC >= 1) {
+            result = ""+ parseInt(dayC) + "天前"
+        }
+        else if (hourC >= 1){
+            result = "" + parseInt(hourC) + "小时前"
+        }
+        else if (minC >= 1) {
+            result = ""+ parseInt(minC) + "分钟前"
+        } else {
+            result = "刚刚"
+        }
+        return result
+    }
+
+    function getDuration(t) {
+        if(t < 60000){
+            return parseInt((t % 60000 )/1000)+"秒";
+        }else if((t>=60000)&&(t<3600000)){
+            return getString(parseInt((t % 3600000)/60000))+":"+getString(parseInt((t % 60000 )/1000));
+        }else {
+            return getString(parseInt(t / 3600000))+":"+getString(parseInt((t % 3600000)/60000))+":"+getString(parseInt((t % 60000 )/1000));
+        }
+    }
+    function getString(t) {
+        var m = "";
+        if(t > 0){
+            if(t<10){
+                m="0"+t;
+            }else{
+                m=t+"";
+            }
+        }else{
+            m="00";
+        }
+        return m;
+    }
+</script>
 </html>

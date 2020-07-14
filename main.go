@@ -2,11 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/google/go-github/github"
 	jsoniter "github.com/json-iterator/go"
+	"golang.org/x/oauth2"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -31,6 +35,7 @@ func exec() {
 	c := 0
 	rs := []SignTable{}
 	for _, bduss := range bdussArr {
+		start := time.Now().UnixNano() / 1e6
 		c++
 		totalCount := 0
 		cookieValidCount := 0
@@ -39,8 +44,13 @@ func exec() {
 		signCount := 0
 		bqCount := 0
 		supCount := 0
+		bdussMd5 := StrToMD5(bduss)
 		if !CheckBdussValid(bduss) {
 			log.Println("BDUSS失效")
+			st := []SignTable{
+				{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0},
+			}
+			rs = append(rs, st[0])
 		} else {
 			tbs := GetTbs(bduss)
 			likedTbs, _ := GetLikedTiebas(bduss, "")
@@ -71,13 +81,18 @@ func exec() {
 			wk := WenKuSign(bduss)
 			zd := WenKuSign(bduss)
 			profile := GetUserProfile(GetUid(bduss))
+			fmt.Println(profile)
 			name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 			nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
+			portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
+			headUrl := "http://tb.himg.baidu.com/sys/portrait/item/" + portrait
+
 			if nameShow != "" {
 				name = nameShow
 			}
+			timespan := (time.Now().UnixNano()/1e6 - start)
 			st := []SignTable{
-				{name, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount},
+				{name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan},
 			}
 			rs = append(rs, st[0])
 		}
@@ -85,7 +100,9 @@ func exec() {
 	ms := GenerateSignResult(0, rs)
 	fmt.Println(ms + "\n")
 	//telegram通知
-	TelegramNOtifyResult(GenerateSignResult(1, rs))
+	//TelegramNOtifyResult(GenerateSignResult(1, rs))
+	//将签到结果写入json文件
+	WriteSignData(rs)
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -179,15 +196,20 @@ func Bq(tbName string, fid string, bduss string, tbs string) int {
 }
 
 type SignTable struct {
-	Name    string `table:"贴吧ID"`
-	Total   int    `table:"总关注数"`
-	Signed  int    `table:"已签到"`
-	Bq      int    `table:"补签"`
-	Excep   int    `table:"异常"`
-	Black   int    `table:"黑名单"`
-	Wenku   string `table:"文库"`
-	Zhidao  string `table:"知道"`
-	Support int    `table:"名人堂助攻"`
+	Name     string `json:"name"`
+	BdussMd5 string `json:"bduss_md5"`
+	Total    int    `json:"total"`
+	Signed   int    `json:"signed"`
+	Bq       int    `json:"bq"`
+	Excep    int    `json:"excep"`
+	Black    int    `json:"black"`
+	Wenku    string `json:"wenku"`
+	Zhidao   string `json:"zhidao"`
+	Support  int    `json:"support"`
+	HeadUrl  string `json:"head_url"`
+	IsValid  bool   `json:"is_valid"`
+	SignTime int64  `json:"sign_time"`
+	Timespan int64  `json:"timespan"`
 }
 
 type SignResult struct {
@@ -498,12 +520,7 @@ func DataSign(postData map[string]interface{}) string {
 		sign_str += fmt.Sprintf("%s=%s", key, postData[key])
 	}
 	sign_str += "tiebaclient!!!"
-	MD5 := md5.New()
-	MD5.Write([]byte(sign_str))
-	MD5Result := MD5.Sum(nil)
-	signValue := make([]byte, 32)
-	hex.Encode(signValue, MD5Result)
-	return strings.ToUpper(string(signValue))
+	return StrToMD5(sign_str)
 }
 func GetBetweenStr(str, start, end string) string {
 	n := strings.Index(str, start)
@@ -559,6 +576,14 @@ func Substr(str string, start, length int) string {
 	}
 	return string(rs[start:end])
 }
+func StrToMD5(str string) string {
+	MD5 := md5.New()
+	MD5.Write([]byte(str))
+	MD5Result := MD5.Sum(nil)
+	signValue := make([]byte, 32)
+	hex.Encode(signValue, MD5Result)
+	return strings.ToUpper(string(signValue))
+}
 
 //http get方法
 func Get(url string) string {
@@ -566,4 +591,112 @@ func Get(url string) string {
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 	return string(body)
+}
+
+//将签到数据写入到json文件中
+func WriteSignData(rs []SignTable) {
+	tuc := 0
+	ttc := 0
+	tsc := 0
+	tvc := 0
+	tbec := 0
+	for _, st := range rs {
+		tuc++
+		if st.IsValid == false {
+			jsonBlob, _ := ioutil.ReadFile("data/sign.json")
+			var old SignData
+			if err := jsoniter.Unmarshal(jsonBlob, &old); err != nil {
+				fmt.Println("error: ", err)
+			}
+			log.Println(old)
+			item, err := GetByMd5(old.Sts, st.BdussMd5)
+			if err != nil {
+				st.Name = item.Name
+				st.Support = item.Support
+				st.Zhidao = item.Zhidao
+				st.Wenku = item.Wenku
+				st.Black = item.Black
+				st.Excep = item.Excep
+				st.Signed = item.Signed
+				st.Bq = item.Bq
+				st.Total = item.Total
+				st.HeadUrl = item.HeadUrl
+				st.SignTime = item.SignTime
+			}
+			tvc++
+		}
+		ttc += st.Total
+		tsc += st.Signed + st.Bq
+		tbec += st.Black + st.Excep
+	}
+	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec}
+	signJson, _ := jsoniter.MarshalToString(sd)
+	fmt.Println(signJson)
+	//ioutil.WriteFile("data/sign.json", []byte(signJson),0666)
+	ghToken := os.Getenv("GITHUB_TOKEN")
+	if len(ghToken) > 0 {
+		pushToGithub(signJson, ghToken)
+	} else {
+		fmt.Println("没有配置$GITHUB_TOKEN")
+	}
+
+}
+
+type SignData struct {
+	Sts  []SignTable
+	Tuc  int `json:"tuc"`
+	Ttc  int `json:"ttc"`
+	Tsc  int `json:"tsc"`
+	Tvc  int `json:"tvc"`
+	Tbec int `json:"tbec"`
+}
+
+func GetByMd5(old []SignTable, bdussMd5 string) (*SignTable, error) {
+	item := &SignTable{}
+	for _, o := range old {
+		if o.BdussMd5 == bdussMd5 {
+			item = &o
+		}
+	}
+	return item, nil
+}
+func pushToGithub(data, token string) error {
+	if data == "" {
+		return errors.New("params error")
+	}
+
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+	c := "签到完成上传结果数据：data/sign.json"
+	sha := ""
+	content := &github.RepositoryContentFileOptions{
+		Message: &c,
+		SHA:     &sha,
+		Branch:  github.String("master"),
+	}
+	op := &github.RepositoryContentGetOptions{}
+	repo, _, _, er := client.Repositories.GetContents(ctx, "libsgh", "Tieba-Sign-Actions", "data/sign.json", op)
+	if er != nil || repo == nil {
+		log.Println("get github repository error, create")
+		content.Content = []byte(data)
+		_, _, err := client.Repositories.CreateFile(ctx, "libsgh", "Tieba-Sign-Actions", "data/sign.json", content)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	} else {
+		content.SHA = repo.SHA
+		content.Content = []byte(data)
+		_, _, err := client.Repositories.UpdateFile(ctx, "libsgh", "Tieba-Sign-Actions", "data/sign.json", content)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
 }
