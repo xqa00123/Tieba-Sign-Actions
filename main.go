@@ -81,7 +81,6 @@ func exec() {
 			wk := WenKuSign(bduss)
 			zd := WenKuSign(bduss)
 			profile := GetUserProfile(GetUid(bduss))
-			fmt.Println(profile)
 			name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 			nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
 			portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
