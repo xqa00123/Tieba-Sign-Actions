@@ -28,8 +28,6 @@ function init(key){
                         "                    <div class=\"mdui-panel-item-title\">"+
                         "                        <div class=\"mdui-chip\">"+
                         "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
-                        "                            <span class=\"mdui-chip-title\">"+
-                        "                            </span>"+
                         "                        </div>"+
                         "                    </div>"+
                         "                    <div class=\"mdui-panel-item-summary\">"+getDateDiff(item.sign_time)+"</div>"+
