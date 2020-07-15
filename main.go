@@ -599,7 +599,7 @@ func WriteSignData(rs []SignTable) {
 	tvc := 0
 	tbec := 0
 	tsuc := 0
-	for _, st := range rs {
+	for i, st := range rs {
 		tuc++
 		if st.IsValid == false {
 			jsonBlob, _ := ioutil.ReadFile("data/sign.json")
@@ -609,23 +609,23 @@ func WriteSignData(rs []SignTable) {
 			}
 			item, err := GetByMd5(old.Sts, st.BdussMd5)
 			if err != nil && item.Name != "" {
-				st.Name = item.Name
-				st.Support = item.Support
-				st.Zhidao = item.Zhidao
-				st.Wenku = item.Wenku
-				st.Black = item.Black
-				st.Excep = item.Excep
-				st.Signed = item.Signed
-				st.Bq = item.Bq
-				st.Total = item.Total
-				st.HeadUrl = item.HeadUrl
-				st.SignTime = item.SignTime
+				rs[i].Name = item.Name
+				rs[i].Support = item.Support
+				rs[i].Zhidao = item.Zhidao
+				rs[i].Wenku = item.Wenku
+				rs[i].Black = item.Black
+				rs[i].Excep = item.Excep
+				rs[i].Signed = item.Signed
+				rs[i].Bq = item.Bq
+				rs[i].Total = item.Total
+				rs[i].HeadUrl = item.HeadUrl
+				rs[i].SignTime = item.SignTime
 			} else {
 				//cookie失效并且未查找到记录
 			}
 			tvc++
 		}
-		st.Name = HideName(st.Name)
+		rs[i].Name = HideName(st.Name)
 		ttc += st.Total
 		tsc += st.Signed + st.Bq
 		tbec += st.Black + st.Excep
