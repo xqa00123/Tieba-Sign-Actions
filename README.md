@@ -49,7 +49,7 @@ TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
   ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-1.png)
   例如：http://tb-act.tk、https://libsgh.github.io/Tieba-Sign-Actions/
   
-- 添加Secret: **GH_TOKEN****，github的access_token，用于上传签到结果到github仓库
+- 添加Secret: **GH_TOKEN**，github的access_token，用于上传签到结果到github仓库
 - 添加Secret: **OWNER_REPO**，云签仓库的名称，例如我的是**libsgh/Tieba-Sign-Actions**
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-2.png)
  
