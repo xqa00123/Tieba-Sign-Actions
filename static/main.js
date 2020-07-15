@@ -28,12 +28,7 @@ function init(key){
                         "                    <div class=\"mdui-panel-item-title\">"+
                         "                        <div class=\"mdui-chip\">"+
                         "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
-                        "                            <span class=\"mdui-chip-title ";
-                    if(!item.is_valid){
-                        html +="mdui-text-color-red-900";
-                    }
-                    html +="\">"+
-                        item.name+
+                        "                            <span class=\"mdui-chip-title\">"+
                         "                            </span>"+
                         "                        </div>"+
                         "                    </div>"+
