@@ -8,6 +8,7 @@
 - [x] 特殊吧补签，防止漏签
 - [x] 签到结果电报（telegram）通知
 
+Demo：https://tb-act.tk
 # 使用说明
 ## 注册一个github账号，已有请跳过
 [注册教程](https://jingyan.baidu.com/article/86fae346e723303c49121abb.html)
@@ -22,8 +23,18 @@
 2. 在线获取工具,扫码方式更安全
 - http://bduss.imyfan.com/
 - http://noki.tk/bduss
-- http://tool.cccyun.cc/tool/bduss/index2.html
+- http://tool.cccyun.cc/tool/bduss/index2.htmla
 ### 设置 Secrets
+Secrets对照表
+
+秘钥名称 | 说明 |  是否可选 
+-|-|-
+BDUSS | 签到cookie参数 | 必填 |
+GH_TOKEN | github的access_token，用于上传签到结果 | 可选 |
+OWNER_REPO | 云签仓库名字，格式：xxx/Tieba-Sign-Actions | 可选 |
+TELEGRAM_APITOKEN | 电报机器人api_token | 可选 |
+TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
+
 1. 打开Tieba-Sign-Actions > Settings > Secrets > New secret
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-1.png)
 2. 输入上一步获取的BDUSS，**每行一个BDUSS，对应一个签到账号**
@@ -33,6 +44,15 @@
     如何创建telegram机器人，请参考：https://blog.csdn.net/weixin_42776979/article/details/88239086
 4. 【结果通知，可选】添加**TELEGRAM_CHAT_ID**,telegram的通知的用户ID，可以在@getidsbot中输入<code>/start</code>获取
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-4.png)
+5. 【云签网页，可选】利用github pages为云签添加首页，用来随时查看签到情况（支持手机、pc访问）
+- 为项目开启github pages，根据自己情况可以使用自定义域名或是github提供的二级域名
+  ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-1.png)
+  例如：http://tb-act.tk、https://libsgh.github.io/Tieba-Sign-Actions/
+  
+- 添加Secret: **GH_TOKEN****，github的access_token，用于上传签到结果到github仓库
+- 添加Secret: **OWNER_REPO****，云签仓库的名称，例如我的是**libsgh/Tieba-Sign-Actions**
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-2.png)
+ 
 ## 三、启用 Action
 1. 点击**Action**，再点击**I understand my workflows, go ahead and enable them**  
 2. 修改任意文件后提交一次
@@ -44,7 +64,8 @@ Actions > Tieba-Sign-Actions
 
 此后，将会在每天00:00、07:00、16:00各执行一次签到（注意服务器时区差8小时）
 
-修改任一文件并push就会触发一次签到
+~~修改任一文件并push就会触发一次签到~~
+点击**star**按钮手动触发执行签到
 
 若有需求，可以在[.github/workflows/run.yml]中自行修改
 
