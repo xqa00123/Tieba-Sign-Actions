@@ -51,7 +51,7 @@ TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
   
 - 添加Secret: **GH_TOKEN**，github的access_token，用于上传签到结果到github仓库
 - 添加Secret: **OWNER_REPO**，云签仓库的名称，例如我的是**libsgh/Tieba-Sign-Actions**
-![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-3.png)
+![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-3.jpg)
  
 ## 三、启用 Action
 1. 点击**Action**，再点击**I understand my workflows, go ahead and enable them**  
