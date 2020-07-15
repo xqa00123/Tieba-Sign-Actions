@@ -560,7 +560,6 @@ func Substr(str string, start, length int) string {
 	if start > end {
 		start, end = end, start
 	}
-
 	if start < 0 {
 		start = 0
 	}
@@ -608,7 +607,6 @@ func WriteSignData(rs []SignTable) {
 			if err := jsoniter.Unmarshal(jsonBlob, &old); err != nil {
 				fmt.Println("error: ", err)
 			}
-			log.Println(old)
 			item, err := GetByMd5(old.Sts, st.BdussMd5)
 			if err != nil && item.Name != "" {
 				st.Name = item.Name
@@ -625,9 +623,9 @@ func WriteSignData(rs []SignTable) {
 			} else {
 				//cookie失效并且未查找到记录
 			}
-			item.Name = HideName(item.Name)
 			tvc++
 		}
+		st.Name = HideName(st.Name)
 		ttc += st.Total
 		tsc += st.Signed + st.Bq
 		tbec += st.Black + st.Excep
@@ -665,6 +663,7 @@ func GetByMd5(old []SignTable, bdussMd5 string) (*SignTable, error) {
 	}
 	return item, nil
 }
+
 func pushToGithub(data, token string, name string) error {
 	owner := strings.Split(name, "/")[0]
 	r := strings.Split(name, "/")[1]
