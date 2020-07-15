@@ -30,7 +30,7 @@ function init(key){
                         "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
                         "                            <span class=\"mdui-chip-title ";
                     if(!item.is_valid){
-                        html +="mdui-text-color-red";
+                        html +="mdui-text-color-red-900";
                     }
                     html +="\">"+
                         item.name+
@@ -43,8 +43,13 @@ function init(key){
                         "                   </div>"+
                         "                <i class=\"mdui-panel-item-arrow mdui-icon material-icons\">keyboard_arrow_down</i>"+
                         "            </div>"+
-                        "            <div class=\"mdui-panel-item-body\">"+
-                        "                <p class=\"mdui-text-color-blue-900\"><b>签到</b>: "+(item.signed+item.bq)+"/"+item.total+"</p>"+
+                        "            <div class=\"mdui-panel-item-body\">";
+                        if(!item.is_valid){
+                            html+="                <p class=\"mdui-text-color-red-900\"><b>ID</b>: "+item.name+"</p>";
+                        }else{
+                            html+="                <p class=\"mdui-text-color-teal-900\"><b>ID</b>: "+item.name+"</p>";
+                        }
+                    html += "                <p class=\"mdui-text-color-blue-900\"><b>签到</b>: "+(item.signed+item.bq)+"/"+item.total+"</p>"+
                         "                <p class=\"mdui-text-color-red-900\"><b>异常或黑名单</b>: "+(item.excep+item.black)+"</p>"+
                         "                <p class=\"mdui-text-color-blue-900\"><b>名人堂助攻</b>: "+item.support+"</p>"+
                         "                <p><b>文库</b>:"+item.wenku+"</p>"+
