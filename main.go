@@ -635,11 +635,10 @@ func WriteSignData(rs []SignTable) {
 	signJson, _ := jsoniter.MarshalToString(sd)
 	//ioutil.WriteFile("data/sign.json", []byte(signJson),0666)
 	ghToken := os.Getenv("GH_TOKEN")
-	op := os.Getenv("OWNER_REPO")
-	if len(ghToken) > 0 && len(op) > 0 {
-		pushToGithub(signJson, ghToken, op)
+	if len(ghToken) > 0 {
+		pushToGithub(signJson, ghToken)
 	} else {
-		fmt.Println("没有配置$GH_TOKEN或$OWNER_REPO")
+		fmt.Println("没有配置$GH_TOKEN")
 	}
 
 }
@@ -664,9 +663,8 @@ func GetByMd5(old []SignTable, bdussMd5 string) (*SignTable, error) {
 	return item, nil
 }
 
-func pushToGithub(data, token string, name string) error {
-	owner := strings.Split(name, "/")[0]
-	r := strings.Split(name, "/")[1]
+func pushToGithub(data, token string) error {
+	r := "Tieba-Sign-Actions"
 	if data == "" {
 		return errors.New("params error")
 	}
@@ -685,11 +683,12 @@ func pushToGithub(data, token string, name string) error {
 		Branch:  github.String("master"),
 	}
 	op := &github.RepositoryContentGetOptions{}
-	repo, _, _, er := client.Repositories.GetContents(ctx, owner, r, "data/sign.json", op)
+	user, _, _ := client.Users.Get(ctx, "")
+	repo, _, _, er := client.Repositories.GetContents(ctx, user.GetLogin(), r, "data/sign.json", op)
 	if er != nil || repo == nil {
 		log.Println("get github repository error, create")
 		content.Content = []byte(data)
-		_, _, err := client.Repositories.CreateFile(ctx, owner, r, "data/sign.json", content)
+		_, _, err := client.Repositories.CreateFile(ctx, user.GetLogin(), r, "data/sign.json", content)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -697,7 +696,7 @@ func pushToGithub(data, token string, name string) error {
 	} else {
 		content.SHA = repo.SHA
 		content.Content = []byte(data)
-		_, _, err := client.Repositories.UpdateFile(ctx, owner, r, "data/sign.json", content)
+		_, _, err := client.Repositories.UpdateFile(ctx, user.GetLogin(), r, "data/sign.json", content)
 		if err != nil {
 			log.Println(err)
 			return err

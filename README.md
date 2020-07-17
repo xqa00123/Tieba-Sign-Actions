@@ -31,7 +31,7 @@ Secrets对照表
 -|-|-
 BDUSS | 签到cookie参数 | 必填 |
 GH_TOKEN | github的access_token，用于上传签到结果 | 可选 |
-OWNER_REPO | 云签仓库名字，格式：xxx/Tieba-Sign-Actions | 可选 |
+~~OWNER_REPO~~ | ~~云签仓库名字，格式：xxx/Tieba-Sign-Actions~~ | 改为自动获取，不需要配置 |
 TELEGRAM_APITOKEN | 电报机器人api_token | 可选 |
 TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
 
@@ -50,7 +50,7 @@ TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
   例如：http://tb-act.tk、https://libsgh.github.io/Tieba-Sign-Actions/
   
 - 添加Secret: **GH_TOKEN**，github的access_token，用于上传签到结果到github仓库
-- 添加Secret: **OWNER_REPO**，云签仓库的名称，例如我的是**libsgh/Tieba-Sign-Actions**
+- ~~添加Secret: **OWNER_REPO**，云签仓库的名称，例如我的是**libsgh/Tieba-Sign-Actions**~~(改为自动获取)
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-5-3.jpg)
  
 ## 三、启用 Action
