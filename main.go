@@ -33,7 +33,7 @@ func exec() {
 	if bdusss == "" {
 		log.Println("环境变量必须设置BDUSS")
 	}
-	bdussArr := strings.Split(bdusss, " ")
+	bdussArr := strings.Split(bdusss, "\n")
 	rs := []SignTable{}
 	sts := make(chan SignTable, 5000)
 	Parallelize(5, len(bdussArr), func(piece int) {
