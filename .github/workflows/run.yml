@@ -1,7 +1,7 @@
 name: Tieba-Sign-Actions
 on:
   schedule:
-    - cron: 0 8,16,23 * * *
+    - cron: 0 4,14,16 * * *
   watch:
     types: [started]
 jobs:
