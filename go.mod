@@ -12,4 +12,5 @@ require (
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	k8s.io/apimachinery v0.18.6 // indirect
 )

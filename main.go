@@ -12,6 +12,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/oauth2"
 	"io/ioutil"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"log"
 	"net/http"
 	url2 "net/url"
@@ -19,6 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,70 +33,22 @@ func exec() {
 	if bdusss == "" {
 		log.Println("环境变量必须设置BDUSS")
 	}
-	bdussArr := strings.Split(bdusss, "\n")
-	c := 0
+	bdussArr := strings.Split(bdusss, " ")
 	rs := []SignTable{}
-	for _, bduss := range bdussArr {
-		start := time.Now().UnixNano() / 1e6
-		c++
-		totalCount := 0
-		cookieValidCount := 0
-		excepCount := 0
-		blackCount := 0
-		signCount := 0
-		bqCount := 0
-		supCount := 0
+	sts := make(chan SignTable, 5000)
+	Parallelize(5, len(bdussArr), func(piece int) {
+		bduss := bdussArr[piece]
 		bdussMd5 := StrToMD5(bduss)
 		if !CheckBdussValid(bduss) {
-			log.Println("BDUSS失效")
-			st := []SignTable{
-				{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0},
-			}
-			rs = append(rs, st[0])
+			st := SignTable{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
+			sts <- st
 		} else {
-			tbs := GetTbs(bduss)
-			likedTbs, _ := GetLikedTiebas(bduss, "")
-			totalCount = len(likedTbs)
-			for _, tb := range likedTbs {
-				signR := SignOneTieBa(tb.Name, tb.Id, bduss, tbs)
-				if signR.ErrorCode == "1" {
-					cookieValidCount++
-				} else if signR.ErrorCode == "340006" || signR.ErrorCode == "300004" {
-					//贴吧目录出问题，加载数据失败2
-					excepCount++
-				} else if signR.ErrorCode == "340008" {
-					//黑名单
-					blackCount++
-				} else if signR.ErrorCode == "0" || signR.ErrorCode == "160002" || signR.ErrorCode == "199901" {
-					//签到成功、已经签到、账号封禁，签到不涨经验
-					signCount++
-				} else if signR.ErrorCode == "2280007" || signR.ErrorCode == "340011" || signR.ErrorCode == "1989004" {
-					//签到服务忙、签到过快、数据加载失败1
-					//三种情况需要重签
-					bqCount += Bq(tb.Name, tb.Id, bduss, tbs)
-				}
-				sup := CelebritySupport(bduss, "", tb.Id, tbs)
-				if sup == "已助攻" || sup == "助攻成功" {
-					supCount++
-				}
-			}
-			wk := WenKuSign(bduss)
-			zd := WenKuSign(bduss)
-			profile := GetUserProfile(GetUid(bduss))
-			name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
-			nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
-			portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
-			headUrl := "http://tb.himg.baidu.com/sys/portrait/item/" + portrait
-
-			if nameShow != "" {
-				name = nameShow
-			}
-			timespan := (time.Now().UnixNano()/1e6 - start)
-			st := []SignTable{
-				{name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan},
-			}
-			rs = append(rs, st[0])
+			OneBtnToSign(bduss, sts)
 		}
+	})
+	close(sts)
+	for st := range sts {
+		rs = append(rs, st)
 	}
 	ms := GenerateSignResult(0, rs)
 	fmt.Println(ms + "\n")
@@ -102,6 +56,85 @@ func exec() {
 	TelegramNOtifyResult(GenerateSignResult(1, rs))
 	//将签到结果写入json文件
 	WriteSignData(rs)
+}
+func OneBtnToSign(bduss string, sts chan SignTable) {
+	tbs := GetTbs(bduss)
+	likedTbs, err := GetLikedTiebas(bduss, "")
+	if err != nil {
+		log.Println("err: ", err)
+	}
+	chs := make(chan ChanSignResult, 5000)
+	Parallelize(5, len(likedTbs), func(piece int) {
+		tb := likedTbs[piece]
+		//签到一个贴吧
+		SyncSignTieBa(tb, bduss, tbs, chs)
+	})
+	close(chs)
+	totalCount := len(likedTbs)
+	cookieValidCount := 0
+	excepCount := 0
+	blackCount := 0
+	signCount := 0
+	bqCount := 0
+	supCount := 0
+	bdussMd5 := StrToMD5(bduss)
+	var timespan int64
+	for signR := range chs {
+		timespan += signR.Timespan
+		if signR.ErrorCode == "1" {
+			cookieValidCount++
+		} else if signR.ErrorCode == "340006" || signR.ErrorCode == "300004" {
+			//贴吧目录出问题，加载数据失败2
+			excepCount++
+		} else if signR.ErrorCode == "340008" {
+			//黑名单
+			blackCount++
+		} else if signR.ErrorCode == "0" || signR.ErrorCode == "160002" || signR.ErrorCode == "199901" {
+			//签到成功、已经签到、账号封禁，签到不涨经验
+			signCount++
+		} else if signR.ErrorCode == "2280007" || signR.ErrorCode == "340011" || signR.ErrorCode == "1989004" {
+			//签到服务忙、签到过快、数据加载失败1
+			//三种情况需要重签
+			bqCount += Bq(signR.Fname, signR.Fid, bduss, tbs)
+		}
+		if signR.Sup == "已助攻" {
+			supCount++
+		}
+	}
+	wk := WenKuSign(bduss)
+	zd := WenKuSign(bduss)
+	profile := GetUserProfile(GetUid(bduss))
+	name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
+	nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
+	portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
+	headUrl := "http://tb.himg.baidu.com/sys/portrait/item/" + portrait
+	if nameShow != "" {
+		name = nameShow
+	}
+	st := SignTable{name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan}
+	sts <- st
+}
+func SyncSignTieBa(tb LikedTieba, bduss string, tbs string, chs chan ChanSignResult) ChanSignResult {
+	signResult := SignOneTieBa(tb.Name, tb.Id, bduss, tbs)
+	sup := CelebritySupport(bduss, "", tb.Id, tbs)
+	if sup == "已助攻" || sup == "助攻成功" {
+		sup = "已助攻"
+	} else {
+		sup = "未助攻"
+	}
+	csr := ChanSignResult{tb.Id, tb.Name, sup, signResult.ErrorMsg, signResult, tb}
+	//名人堂助攻
+	chs <- csr
+	return csr
+}
+
+type ChanSignResult struct {
+	Fid    string `json:"fid"`
+	Fname  string `json:"fname"`
+	Sup    string `json:"sup"`
+	RetMsg string `json:"ret_msg"`
+	SignResult
+	LikedTieba
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -703,4 +736,31 @@ func pushToGithub(data, token string) error {
 		}
 	}
 	return nil
+}
+
+type DoWorkPieceFunc func(piece int)
+
+func Parallelize(workers, pieces int, doWorkPiece DoWorkPieceFunc) {
+	toProcess := make(chan int, pieces)
+	for i := 0; i < pieces; i++ {
+		toProcess <- i
+	}
+	close(toProcess)
+
+	if pieces < workers {
+		workers = pieces
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer utilruntime.HandleCrash()
+			defer wg.Done()
+			for piece := range toProcess {
+				doWorkPiece(piece)
+			}
+		}()
+	}
+	wg.Wait()
 }
