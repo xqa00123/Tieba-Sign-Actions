@@ -107,7 +107,7 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 	name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 	nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
 	portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
-	headUrl := "http://tb.himg.baidu.com/sys/portrait/item/" + portrait
+	headUrl := "https://himg.baidu.com/sys/portrait/item/" + strings.Split(portrait, "?")[0]
 	if nameShow != "" {
 		name = nameShow
 	}
