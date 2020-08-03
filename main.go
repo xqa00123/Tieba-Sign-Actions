@@ -446,7 +446,7 @@ func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string 
 	j := jsoniter.Get([]byte(body))
 	if j.Get("error_code").ToString() == "0" {
 		pid := j.Get("pid").ToString()
-		return "回帖成功" + fmt.Sprintf("https://tieba.baidu.com/p/?fid=%s&pid=%s#%s", fid, pid, pid)
+		return "回帖成功：" + fmt.Sprintf("https://tieba.baidu.com/p/%s?fid=%s&pid=%s#%s", tid, fid, pid, pid)
 	} else {
 		return "回帖失败：" + j.Get("msg").ToString()
 	}
