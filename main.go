@@ -448,7 +448,7 @@ func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string 
 		pid := j.Get("pid").ToString()
 		return "回帖成功：" + fmt.Sprintf("https://tieba.baidu.com/p/%s?fid=%s&pid=%s#%s", tid, fid, pid, pid)
 	} else {
-		return "回帖失败：" + j.Get("msg").ToString()
+		return "回帖失败：" + body
 	}
 }
 
