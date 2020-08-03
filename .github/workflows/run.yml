@@ -26,4 +26,5 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           OWNER_REPO: ${{ secrets.OWNER_REPO }}
+          REPLY: ${{ secrets.REPLY }}
         run: go run main.go

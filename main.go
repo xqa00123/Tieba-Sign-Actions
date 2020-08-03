@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"log"
+	"math/rand"
 	"net/http"
 	url2 "net/url"
 	"os"
@@ -26,8 +27,8 @@ import (
 
 func main() {
 	exec()
-}
 
+}
 func exec() {
 	bdusss := os.Getenv("BDUSS")
 	if bdusss == "" {
@@ -56,6 +57,21 @@ func exec() {
 	TelegramNOtifyResult(GenerateSignResult(1, rs))
 	//将签到结果写入json文件
 	WriteSignData(rs)
+	replys := os.Getenv("REPLY")
+	if replys != "" {
+		var replyInfo []ReplyInfo
+		if err := jsoniter.Unmarshal([]byte(replys), &replyInfo); err != nil {
+			log.Println("err: ", err)
+		}
+		for _, ri := range replyInfo {
+			bds := bdussArr[ri.BdussNo]
+			tbName := ri.TbName
+			tid := ri.Tid
+			ct := ri.ClientType
+			rr := reply(bds, GetTbs(bds), tid, GetFid(tbName), tbName, RandMsg(), ct)
+			TelegramNOtifyResult(rr)
+		}
+	}
 }
 func OneBtnToSign(bduss string, sts chan SignTable) {
 	tbs := GetTbs(bduss)
@@ -390,6 +406,81 @@ func GetLikedTiebas(bduss string, uid string) ([]LikedTieba, error) {
 		}
 	}
 	return likedTiebaList, nil
+}
+
+//回帖
+func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string {
+	ct := "2"
+	if clientType == 0 {
+		ct = strconv.FormatInt(RandInt64(1, 4), 10)
+	} else {
+		ct = strconv.Itoa(clientType)
+	}
+	var postData = map[string]interface{}{
+		"BDUSS":           bduss,
+		"_client_type":    ct,
+		"_client_version": "9.7.8.0",
+		"_phone_imei":     "000000000000000",
+		"anonymous":       "1",
+		"content":         content,
+		"fid":             fid,
+		"from":            "1008621x",
+		"is_ad":           "0",
+		"kw":              tbName,
+		"model":           "MI+5",
+		"net_type":        "1",
+		"new_vcode":       "1",
+		"tbs":             tbs,
+		"tid":             tid,
+		"timestamp":       strconv.FormatInt(time.Now().UnixNano()/1e6, 10),
+		"vcode_tag":       "11",
+	}
+	postData["sign"] = DataSign(postData)
+	headers := make(map[string]string)
+	headers["User-Agent"] = "bdtb for Android 9.7.8.0"
+	headers["Host"] = "c.tieba.baidu.com"
+	body, err := FetchWithHeaders("http://c.tieba.baidu.com/c/c/post/add", postData, "", "", headers)
+	if err != nil {
+		log.Println("err: ", err)
+	}
+	j := jsoniter.Get([]byte(body))
+	if j.Get("error_code").ToString() == "0" {
+		pid := j.Get("pid").ToString()
+		return "回帖成功" + fmt.Sprintf("https://tieba.baidu.com/p/?fid=%s&pid=%s#%s", fid, pid, pid)
+	} else {
+		return "回帖失败：" + j.Get("msg").ToString()
+	}
+}
+
+type ReplyInfo struct {
+	BdussNo    int    `json:"bduss_no"`
+	Tid        string `json:"tid"`
+	TbName     string `json:"tb_name"`
+	ClientType int    `json:"client_type"`
+}
+
+func RandMsg() string {
+	urls := []string{"https://v1.hitokoto.cn/?encode=json", "https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang=en"}
+	RandInt64(0, 1)
+	rand.Seed(time.Now().UnixNano())
+	i := rand.Intn(2)
+	body, err := Fetch(urls[i], nil, "", "")
+	if err != nil {
+		fmt.Println("err-50: ", err)
+	}
+	if i == 0 {
+		return jsoniter.Get([]byte(body), "hitokoto").ToString()
+	} else {
+		return jsoniter.Get([]byte(body), "quoteText").ToString()
+	}
+}
+
+func RandInt64(min, max int64) int64 {
+	rand.Seed(time.Now().UnixNano())
+	if min >= max || min == 0 || max == 0 {
+		return max
+	}
+	return rand.Int63n(max-min) + min
 }
 
 //签到一个贴吧
