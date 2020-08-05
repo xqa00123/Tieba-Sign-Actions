@@ -27,7 +27,6 @@ import (
 
 func main() {
 	exec()
-
 }
 func exec() {
 	bdusss := os.Getenv("BDUSS")
@@ -35,43 +34,47 @@ func exec() {
 		log.Println("环境变量必须设置BDUSS")
 	}
 	bdussArr := strings.Split(bdusss, "\n")
-	rs := []SignTable{}
-	sts := make(chan SignTable, 5000)
-	Parallelize(5, len(bdussArr), func(piece int) {
-		bduss := bdussArr[piece]
-		bdussMd5 := StrToMD5(bduss)
-		if !CheckBdussValid(bduss) {
-			st := SignTable{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
-			sts <- st
-		} else {
-			OneBtnToSign(bduss, sts)
+	t := os.Args[0]
+	if t == "si" {
+		rs := []SignTable{}
+		sts := make(chan SignTable, 5000)
+		Parallelize(5, len(bdussArr), func(piece int) {
+			bduss := bdussArr[piece]
+			bdussMd5 := StrToMD5(bduss)
+			if !CheckBdussValid(bduss) {
+				st := SignTable{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
+				sts <- st
+			} else {
+				OneBtnToSign(bduss, sts)
+			}
+		})
+		close(sts)
+		for st := range sts {
+			rs = append(rs, st)
 		}
-	})
-	close(sts)
-	for st := range sts {
-		rs = append(rs, st)
+		ms := GenerateSignResult(0, rs)
+		fmt.Println(ms + "\n")
+		//telegram通知
+		TelegramNOtifyResult(GenerateSignResult(1, rs))
+		//将签到结果写入json文件
+		WriteSignData(rs)
+	} else {
+		replys := os.Getenv("REPLY")
+		if replys != "" {
+			var replyInfo []ReplyInfo
+			if err := jsoniter.Unmarshal([]byte(replys), &replyInfo); err != nil {
+				log.Println("err: ", err)
+			}
+			for _, ri := range replyInfo {
+				bds := bdussArr[ri.BdussNo]
+				tbName := ri.TbName
+				tid := ri.Tid
+				rr := reply(bds, GetTbs(bds), tid, GetFid(tbName), tbName, RandMsg(), 2)
+				TelegramNOtifyResult(rr)
+			}
+		}
 	}
-	ms := GenerateSignResult(0, rs)
-	fmt.Println(ms + "\n")
-	//telegram通知
-	TelegramNOtifyResult(GenerateSignResult(1, rs))
-	//将签到结果写入json文件
-	WriteSignData(rs)
-	replys := os.Getenv("REPLY")
-	if replys != "" {
-		var replyInfo []ReplyInfo
-		if err := jsoniter.Unmarshal([]byte(replys), &replyInfo); err != nil {
-			log.Println("err: ", err)
-		}
-		for _, ri := range replyInfo {
-			bds := bdussArr[ri.BdussNo]
-			tbName := ri.TbName
-			tid := ri.Tid
-			ct := ri.ClientType
-			rr := reply(bds, GetTbs(bds), tid, GetFid(tbName), tbName, RandMsg(), ct)
-			TelegramNOtifyResult(rr)
-		}
-	}
+
 }
 func OneBtnToSign(bduss string, sts chan SignTable) {
 	tbs := GetTbs(bduss)
@@ -419,7 +422,7 @@ func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string 
 	var postData = map[string]interface{}{
 		"BDUSS":           bduss,
 		"_client_type":    ct,
-		"_client_version": "9.7.8.0",
+		"_client_version": "11.7.8.1",
 		"_phone_imei":     "000000000000000",
 		"anonymous":       "1",
 		"content":         content,
@@ -437,7 +440,7 @@ func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string 
 	}
 	postData["sign"] = DataSign(postData)
 	headers := make(map[string]string)
-	headers["User-Agent"] = "bdtb for Android 9.7.8.0"
+	headers["User-Agent"] = "bdtb for Android 11.7.8.1"
 	headers["Host"] = "c.tieba.baidu.com"
 	body, err := FetchWithHeaders("http://c.tieba.baidu.com/c/c/post/add", postData, "", "", headers)
 	if err != nil {

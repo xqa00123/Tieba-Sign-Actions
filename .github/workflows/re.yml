@@ -1,7 +1,7 @@
 name: Tieba-Sign-Actions
 on:
   schedule:
-    - cron: 0 4,14,16 * * *
+    - cron: 0 6,8,10,12,14 * * *
   watch:
     types: [started]
 jobs:
@@ -19,7 +19,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Sign
+      - name: Reply
         env:
           BDUSS: ${{ secrets.BDUSS }}
           TELEGRAM_APITOKEN: ${{ secrets.TELEGRAM_APITOKEN }}
@@ -27,4 +27,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           OWNER_REPO: ${{ secrets.OWNER_REPO }}
           REPLY: ${{ secrets.REPLY }}
-        run: go run main.go si
+        run: go run main.go re
