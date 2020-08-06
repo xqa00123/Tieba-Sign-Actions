@@ -73,14 +73,28 @@ func exec() {
 				log.Println("err: ", err)
 			}
 			for _, ri := range replyInfo {
-				tbName := ri.TbName
-				tid := ri.Tid
-				rr := reply(ri.Bduss, GetTbs(ri.Bduss), tid, GetFid(tbName), tbName, RandMsg(), 2)
-				TelegramNOtifyResult(rr)
+				profile := GetUserProfile(GetUid(ri.Bduss))
+				portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
+				name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
+				if isBan(portrait) {
+					TelegramNOtifyResult(name + "[已被封禁]：\n回帖失败")
+				} else {
+					tbName := ri.TbName
+					tid := ri.Tid
+					rr := reply(ri.Bduss, GetTbs(ri.Bduss), tid, GetFid(tbName), tbName, RandMsg(), 2)
+					TelegramNOtifyResult(name + "[正常]：\n" + rr)
+				}
 			}
 		}
 	}
 
+}
+func isBan(id string) bool {
+	r, _ := Fetch(fmt.Sprintf("https://tieba.baidu.com/home/main?id=%s&fr=userbar", id), nil, "", "")
+	if strings.Contains(r, "抱歉，您访问的用户已被屏蔽") {
+		return true
+	}
+	return false
 }
 func OneBtnToSign(bduss string, sts chan SignTable) {
 	tbs := GetTbs(bduss)
