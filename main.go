@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/google/go-github/github"
@@ -25,7 +26,14 @@ import (
 	"time"
 )
 
+var cronType string
+
+func init() {
+	flag.StringVar(&cronType, "cronType", "si", "set config `cronType`")
+}
+
 func main() {
+	flag.Parse()
 	exec()
 }
 func exec() {
@@ -34,8 +42,7 @@ func exec() {
 		log.Println("环境变量必须设置BDUSS")
 	}
 	bdussArr := strings.Split(bdusss, "\n")
-	t := os.Args[0]
-	if t == "si" {
+	if cronType == "si" {
 		rs := []SignTable{}
 		sts := make(chan SignTable, 5000)
 		Parallelize(5, len(bdussArr), func(piece int) {
@@ -66,10 +73,9 @@ func exec() {
 				log.Println("err: ", err)
 			}
 			for _, ri := range replyInfo {
-				bds := bdussArr[ri.BdussNo]
 				tbName := ri.TbName
 				tid := ri.Tid
-				rr := reply(bds, GetTbs(bds), tid, GetFid(tbName), tbName, RandMsg(), 2)
+				rr := reply(ri.Bduss, GetTbs(ri.Bduss), tid, GetFid(tbName), tbName, RandMsg(), 2)
 				TelegramNOtifyResult(rr)
 			}
 		}
@@ -456,7 +462,7 @@ func reply(bduss, tbs, tid, fid, tbName, content string, clientType int) string 
 }
 
 type ReplyInfo struct {
-	BdussNo    int    `json:"bduss_no"`
+	Bduss      string `json:"bduss"`
 	Tid        string `json:"tid"`
 	TbName     string `json:"tb_name"`
 	ClientType int    `json:"client_type"`
