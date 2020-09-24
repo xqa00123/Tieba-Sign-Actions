@@ -1,4 +1,4 @@
-var $$ = mdui.$;
+var $$ = mdui.JQ;
 $$(function () {
     init("");
 });
