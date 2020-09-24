@@ -27,6 +27,7 @@ import (
 )
 
 var cronType string
+var pageSize int = 15
 
 func init() {
 	flag.StringVar(&cronType, "cronType", "si", "set config `cronType`")
@@ -42,6 +43,9 @@ func exec() {
 		log.Println("环境变量必须设置BDUSS")
 	}
 	bdussArr := strings.Split(bdusss, "\n")
+	if os.Getenv("AUTH_AES_KEY") != "" {
+		SaveUserList(bdussArr)
+	}
 	if cronType == "si" {
 		rs := []SignTable{}
 		sts := make(chan SignTable, 5000)
@@ -49,7 +53,7 @@ func exec() {
 			bduss := bdussArr[piece]
 			bdussMd5 := StrToMD5(bduss)
 			if !CheckBdussValid(bduss) {
-				st := SignTable{"", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
+				st := SignTable{"", "", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
 				sts <- st
 			} else {
 				OneBtnToSign(bduss, sts)
@@ -89,6 +93,54 @@ func exec() {
 	}
 
 }
+func SaveUserList(bdussArr []string) {
+	userList := []User{}
+	for _, bduss := range bdussArr {
+		uid := GetUid(bduss)
+		profile := GetUserProfile(uid)
+		name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
+		nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
+		if nameShow != "" {
+			name = nameShow
+		}
+		portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
+		headUrl := "https://himg.baidu.com/sys/portrait/item/" + strings.Split(portrait, "?")[0]
+		userList = append(userList, User{0, name, uid, headUrl})
+	}
+	rd, _ := ioutil.ReadDir("data")
+	for _, fi := range rd {
+		if !fi.IsDir() && fi.Name() != "sign.json" && fi.Name() != "users.txt" {
+			flag := true
+			for _, u := range userList {
+				if u.Uid == strings.Split(fi.Name(), ".")[0] {
+					flag = false
+				}
+			}
+			if flag {
+				//从github上删除多余的文件
+				ghToken := os.Getenv("GH_TOKEN")
+				if len(ghToken) > 0 {
+					deleteFromGithub(ghToken, "data/"+fi.Name())
+				} else {
+					fmt.Println("没有配置$GH_TOKEN")
+				}
+
+			}
+		}
+	}
+	usersJson, _ := jsoniter.MarshalToString(userList)
+	usersJson, err := JsAesEncrypt(usersJson, os.Getenv("AUTH_AES_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	ioutil.WriteFile("data/users.txt", []byte(usersJson), 0666)
+	ghToken := os.Getenv("GH_TOKEN")
+	if len(ghToken) > 0 {
+		pushToGithub(usersJson, ghToken, "data/users.txt")
+	} else {
+		fmt.Println("没有配置$GH_TOKEN")
+	}
+}
 func isBan(id string) bool {
 	r, _ := Fetch(fmt.Sprintf("https://tieba.baidu.com/home/main?id=%s&fr=userbar", id), nil, "", "")
 	if strings.Contains(r, "抱歉，您访问的用户已被屏蔽") {
@@ -117,8 +169,25 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 	bqCount := 0
 	supCount := 0
 	bdussMd5 := StrToMD5(bduss)
+	pageData := []PageDetail{}
+	detailData := []SignDetail{}
 	var timespan int64
+	c := 0
+	page := 0
+	i := 0
 	for signR := range chs {
+		i++
+		detailData = append(detailData, SignDetail{signR.Name, signR.Avatar, signR.Level_id, signR.Cur_score, signR.Levelup_score, signR.ErrorCode, signR.RetMsg, signR.SignTime})
+		c++
+		if c == pageSize || i == totalCount {
+			p := Paginator(page, pageSize, totalCount)
+			p.List = detailData
+			pageData = append(pageData, p)
+			detailData = []SignDetail{}
+			c = 0
+		} else if c == 1 {
+			page++
+		}
 		timespan += signR.Timespan
 		if signR.ErrorCode == "1" {
 			cookieValidCount++
@@ -142,7 +211,8 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 	}
 	wk := WenKuSign(bduss)
 	zd := WenKuSign(bduss)
-	profile := GetUserProfile(GetUid(bduss))
+	uid := GetUid(bduss)
+	profile := GetUserProfile(uid)
 	name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 	nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
 	portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
@@ -150,7 +220,10 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 	if nameShow != "" {
 		name = nameShow
 	}
-	st := SignTable{name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan}
+	if os.Getenv("AUTH_AES_KEY") != "" {
+		WriteSignDetailData(pageData, User{int64(totalCount), name, uid, headUrl})
+	}
+	st := SignTable{uid, name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan}
 	sts <- st
 }
 func SyncSignTieBa(tb LikedTieba, bduss string, tbs string, chs chan ChanSignResult) ChanSignResult {
@@ -174,6 +247,36 @@ type ChanSignResult struct {
 	RetMsg string `json:"ret_msg"`
 	SignResult
 	LikedTieba
+}
+type PageDetail struct {
+	List       []SignDetail `json:"list"`        //list数据
+	PageNo     int          `json:"page_no"`     //当前页码
+	PageSize   int          `json:"page_size"`   //每页大小
+	Pages      []int        `json:"pages"`       //页码
+	TotalPages int          `json:"total_pages"` //总页数
+	Total      int          `json:"total"`       //总数
+	FirstPage  int          `json:"first_page"`
+	LastPage   int          `json:"last_page"`
+}
+type SignDetail struct {
+	Name         string `json:"name"`
+	Avatar       string `json:"avatar"`
+	LevelId      string `json:"level_id"`
+	CurScore     string `json:"cur_score"`
+	LevelupScore string `json:"levelup_score"`
+	ErrorCode    string `json:"error_code"`
+	RetMsg       string `json:"ret_msg"`
+	SignTime     int64  `json:"sign_time"`
+}
+type SignDetailResult struct {
+	Data []PageDetail `json:"data"`
+	User User         `json:"user"`
+}
+type User struct {
+	Total   int64  `json:"total"`
+	Name    string `json:"name"`
+	Uid     string `json:"uid"`
+	HeadUrl string `json:"head_url"`
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -233,7 +336,15 @@ func GenerateSignResult(t int, rs []SignTable) string {
 	s += "黑名单:" + strings.Join(Black, "‖") + "\n"
 	s += "名人堂助攻 :" + strings.Join(Support, "‖") + "\n"
 	s += "文库:" + strings.Join(wk, "‖") + "\n"
-	s += "知道:" + strings.Join(zd, "‖")
+	s += "知道:" + strings.Join(zd, "‖") + "\n"
+	if os.Getenv("AUTH_AES_KEY") != "" && os.Getenv("HOME_URL") != "" {
+		url := os.Getenv("HOME_URL") + "/tb.html?k=" + os.Getenv("AUTH_AES_KEY")
+		body, err := Fetch("https://api.d5.nz/api/dwz/url.php?url="+url, nil, "", "")
+		if err == nil && jsoniter.Get([]byte(body), "code").ToString() == "200" {
+			url = jsoniter.Get([]byte(body), "url").ToString()
+		}
+		s += "签到详情:" + url
+	}
 	return s
 }
 
@@ -267,6 +378,7 @@ func Bq(tbName string, fid string, bduss string, tbs string) int {
 }
 
 type SignTable struct {
+	Uid      string `json:"uid"`
 	Name     string `json:"name"`
 	BdussMd5 string `json:"bduss_md5"`
 	Total    int    `json:"total"`
@@ -780,14 +892,32 @@ func WriteSignData(rs []SignTable) {
 	}
 	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec, tsuc}
 	signJson, _ := jsoniter.MarshalToString(sd)
-	//ioutil.WriteFile("data/sign.json", []byte(signJson),0666)
+	ioutil.WriteFile("data/sign.json", []byte(signJson), 0666)
 	ghToken := os.Getenv("GH_TOKEN")
 	if len(ghToken) > 0 {
-		pushToGithub(signJson, ghToken)
+		pushToGithub(signJson, ghToken, "data/sign.json")
 	} else {
 		fmt.Println("没有配置$GH_TOKEN")
 	}
 
+}
+func WriteSignDetailData(pd []PageDetail, user User) {
+	os.Remove("data/" + user.Uid + ".txt")
+	sdr := SignDetailResult{pd, user}
+	csrsJson, _ := jsoniter.MarshalToString(sdr)
+	key := os.Getenv("AUTH_AES_KEY")
+	ciphertext, err := JsAesEncrypt(csrsJson, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ioutil.WriteFile("data/"+user.Uid+".txt", []byte(ciphertext), 0666)
+	ghToken := os.Getenv("GH_TOKEN")
+	if len(ghToken) > 0 {
+		pushToGithub(ciphertext, ghToken, "data/"+user.Uid+".txt")
+	} else {
+		fmt.Println("没有配置$GH_TOKEN")
+	}
 }
 
 type SignData struct {
@@ -810,7 +940,7 @@ func GetByMd5(old []SignTable, bdussMd5 string) (*SignTable, error) {
 	return item, nil
 }
 
-func pushToGithub(data, token string) error {
+func pushToGithub(data, token, path string) error {
 	r := "Tieba-Sign-Actions"
 	if data == "" {
 		return errors.New("params error")
@@ -822,7 +952,7 @@ func pushToGithub(data, token string) error {
 
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-	c := "签到完成上传结果数据：data/sign.json"
+	c := "签到完成上传结果数据：" + path
 	sha := ""
 	content := &github.RepositoryContentFileOptions{
 		Message: &c,
@@ -831,11 +961,11 @@ func pushToGithub(data, token string) error {
 	}
 	op := &github.RepositoryContentGetOptions{}
 	user, _, _ := client.Users.Get(ctx, "")
-	repo, _, _, er := client.Repositories.GetContents(ctx, user.GetLogin(), r, "data/sign.json", op)
+	repo, _, _, er := client.Repositories.GetContents(ctx, user.GetLogin(), r, path, op)
 	if er != nil || repo == nil {
 		log.Println("get github repository error, create")
 		content.Content = []byte(data)
-		_, _, err := client.Repositories.CreateFile(ctx, user.GetLogin(), r, "data/sign.json", content)
+		_, _, err := client.Repositories.CreateFile(ctx, user.GetLogin(), r, path, content)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -843,11 +973,37 @@ func pushToGithub(data, token string) error {
 	} else {
 		content.SHA = repo.SHA
 		content.Content = []byte(data)
-		_, _, err := client.Repositories.UpdateFile(ctx, user.GetLogin(), r, "data/sign.json", content)
+		_, _, err := client.Repositories.UpdateFile(ctx, user.GetLogin(), r, path, content)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
+	}
+	return nil
+}
+
+func deleteFromGithub(token, path string) error {
+	r := "Tieba-Sign-Actions"
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+	c := "删除多余数据文件：" + path
+	op := &github.RepositoryContentGetOptions{}
+	user, _, _ := client.Users.Get(ctx, "")
+	repo, _, _, _ := client.Repositories.GetContents(ctx, user.GetLogin(), r, path, op)
+	cop := &github.RepositoryContentFileOptions{
+		Message: &c,
+		SHA:     repo.SHA,
+		Branch:  github.String("master"),
+	}
+	_, _, err := client.Repositories.DeleteFile(ctx, user.GetLogin(), r, path, cop)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
 	return nil
 }

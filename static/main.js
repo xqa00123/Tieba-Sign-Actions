@@ -1,4 +1,4 @@
-var $$ = mdui.JQ;
+var $$ = mdui.$;
 $$(function () {
     init("");
 });
@@ -8,7 +8,6 @@ function init(key){
         url: 'data/sign.json',
         success: function (data) {
             data = eval('(' + data + ')');
-
             $$("#lb_uc").html("用户数<span> "+data.tuc+"</span>");
             $$("#lb_tc").html("贴吧数<span> "+data.ttc+"</span>");
             $$("#lb_sc").html("已签到<span> "+data.tsc+"</span>");
@@ -28,6 +27,8 @@ function init(key){
                         "                    <div class=\"mdui-panel-item-title\">"+
                         "                        <div class=\"mdui-chip\">"+
                         "                            <img class=\"mdui-chip-icon\" src=\""+item.head_url+"\"/>"+
+                        "                            <span class=\"mdui-chip-title\">"+
+                        "                            </span>"+
                         "                        </div>"+
                         "                    </div>"+
                         "                    <div class=\"mdui-panel-item-summary\">"+getDateDiff(item.sign_time)+"</div>"+
@@ -37,11 +38,11 @@ function init(key){
                         "                <i class=\"mdui-panel-item-arrow mdui-icon material-icons\">keyboard_arrow_down</i>"+
                         "            </div>"+
                         "            <div class=\"mdui-panel-item-body\">";
-                        if(!item.is_valid){
-                            html+="                <p class=\"mdui-text-color-red-900\"><b>ID</b>: "+item.name+"</p>";
-                        }else{
-                            html+="                <p class=\"mdui-text-color-teal-900\"><b>ID</b>: "+item.name+"</p>";
-                        }
+                    if(!item.is_valid){
+                        html+="                <p class=\"mdui-text-color-red-900\"><b>ID</b>: "+item.name+"</p>";
+                    }else{
+                        html+="                <p class=\"mdui-text-color-teal-900\"><b>ID</b>: "+item.name+"</p>";
+                    }
                     html += "                <p class=\"mdui-text-color-blue-900\"><b>签到</b>: "+(item.signed+item.bq)+"/"+item.total+"</p>"+
                         "                <p class=\"mdui-text-color-red-900\"><b>异常或黑名单</b>: "+(item.excep+item.black)+"</p>"+
                         "                <p class=\"mdui-text-color-blue-900\"><b>名人堂助攻</b>: "+item.support+"</p>"+

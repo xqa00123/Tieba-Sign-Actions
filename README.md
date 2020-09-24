@@ -26,7 +26,7 @@ Demo：https://tb-act.tk
 2. 在线获取工具,扫码方式更安全
 - http://bduss.imyfan.com/
 - http://noki.tk/bduss
-- http://tool.cccyun.cc/tool/bduss/index2.htmla
+- http://tool.cccyun.cc/tool/bduss/index2.html
 ### 设置 Secrets
 Secrets对照表
 
@@ -37,6 +37,8 @@ GH_TOKEN | github的access_token，用于上传签到结果 | 可选 |
 ~~OWNER_REPO~~ | ~~云签仓库名字，格式：xxx/Tieba-Sign-Actions~~ | 改为自动获取，不需要配置 |
 TELEGRAM_APITOKEN | 电报机器人api_token | 可选 |
 TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
+AUTH_AES_KEY | 查询详情的AES秘钥，16位，由字母和数字组成，填写此选项程序将开启签到详情记录, [随机密码生成器](https://suijimimashengcheng.51240.com/)| 可选 |
+HOME_URL | 你的云签网址，注意地址末尾请不要输入"/"，用于发送查看签到详情的地址 | 可选 |
 
 1. 打开Tieba-Sign-Actions > Settings > Secrets > New secret
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-1.png)

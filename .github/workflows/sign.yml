@@ -27,4 +27,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           OWNER_REPO: ${{ secrets.OWNER_REPO }}
           REPLY: ${{ secrets.REPLY }}
+          Auth_AES_KEY: ${{ secrets.Auth_AES_KEY }}
         run: go run main.go -cronType si
