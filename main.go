@@ -966,7 +966,7 @@ func pushToGithub(data, token, path string) error {
 	user, _, _ := client.Users.Get(ctx, "")
 	repo, _, _, er := client.Repositories.GetContents(ctx, user.GetLogin(), r, path, op)
 	if er != nil || repo == nil {
-		log.Println("get github repository error, create")
+		log.Println("get github repository error, create "+path, er)
 		content.Content = []byte(data)
 		_, _, err := client.Repositories.CreateFile(ctx, user.GetLogin(), r, path, content)
 		if err != nil {
