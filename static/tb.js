@@ -7,10 +7,16 @@ var data = null;
 var status = 0;
 var cdnDataUrl = "";
 if(!key){
-    var value = prompt("访问受到限制，您需要提供访问密码才能查看。","");
-    if (value != null && value != ""){
-        window.location.href = changeURLArg(href,'k', value);
+    if($.cookie("tsa_pwd") == ""){
+        var value = prompt("访问受到限制，您需要提供访问密码才能查看。","");
+        if (value != null && value != ""){
+            $.cookie("tsa_pwd", value);
+            window.location.href = changeURLArg(href,'k', value);
+        }
+    }else{
+        key=$.cookie("tsa_pwd");
     }
+
 }else{
     uid = initMenu(key, uid);
     initDetail(pageNo);
