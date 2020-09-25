@@ -28,4 +28,5 @@ jobs:
           OWNER_REPO: ${{ secrets.OWNER_REPO }}
           REPLY: ${{ secrets.REPLY }}
           Auth_AES_KEY: ${{ secrets.Auth_AES_KEY }}
+          HOME_URL: ${{ secrets.HOME_URL }}
         run: go run main.go -cronType si

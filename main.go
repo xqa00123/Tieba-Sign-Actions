@@ -991,13 +991,15 @@ func deleteFromGithub(token, path string) error {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
-
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	c := "删除多余数据文件：" + path
 	op := &github.RepositoryContentGetOptions{}
 	user, _, _ := client.Users.Get(ctx, "")
 	repo, _, _, _ := client.Repositories.GetContents(ctx, user.GetLogin(), r, path, op)
+	if repo == nil {
+		return nil
+	}
 	cop := &github.RepositoryContentFileOptions{
 		Message: &c,
 		SHA:     repo.SHA,
