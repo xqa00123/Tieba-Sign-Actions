@@ -929,10 +929,10 @@ func WriteSignDetailData(pd []PageDetail, user User) {
 		log.Fatal(err)
 	}
 
-	ioutil.WriteFile("data/"+user.Uid+".txt", []byte(ciphertext), 0666)
+	ioutil.WriteFile("data/"+user.CDNDataUrl+".txt", []byte(ciphertext), 0666)
 	ghToken := os.Getenv("GH_TOKEN")
 	if len(ghToken) > 0 {
-		pushToGithub(ciphertext, ghToken, "data/"+user.Uid+".txt")
+		pushToGithub(ciphertext, ghToken, "data/"+user.CDNDataUrl+".txt")
 	} else {
 		fmt.Println("没有配置$GH_TOKEN")
 	}
