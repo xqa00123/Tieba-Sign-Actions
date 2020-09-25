@@ -7,7 +7,7 @@ var data = null;
 var status = 0;
 var cdnDataUrl = "";
 if(!key){
-    if($.cookie("tsa_pwd") == ""){
+    if($.cookie("tsa_pwd") == null){
         var value = prompt("访问受到限制，您需要提供访问密码才能查看。","");
         if (value != null && value != ""){
             $.cookie("tsa_pwd", value);
@@ -15,6 +15,8 @@ if(!key){
         }
     }else{
         key=$.cookie("tsa_pwd");
+        uid = initMenu(key, uid);
+        initDetail(pageNo);
     }
 
 }else{
@@ -87,7 +89,6 @@ function initMenu(key, uid){
     $$.ajax({
         method: 'GET',
         url: 'data/users.txt',
-        cache:false,
         async:false,
         success: function (data) {
             var dataText = aseDecrypt(data, key);
