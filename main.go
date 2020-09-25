@@ -98,30 +98,32 @@ func exec() {
 }
 func SaveUserList(bdussArr []string) {
 	userList := []User{}
+	//从github上删除多余的文件
+	ghToken := os.Getenv("GH_TOKEN")
+	repoName := GetRepoName(ghToken)
 	for _, bduss := range bdussArr {
 		uid := GetUid(bduss)
 		profile := GetUserProfile(uid)
 		name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 		nameShow := jsoniter.Get([]byte(profile), "user").Get("name_show").ToString()
+		cdnUrl := fmt.Sprintf("https://cdn.jsdelivr.net/gh/%s@latest/data/%s-%s.txt", repoName, uid, GetRandomString(4))
 		if nameShow != "" {
 			name = nameShow
 		}
 		portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
 		headUrl := "https://himg.baidu.com/sys/portrait/item/" + strings.Split(portrait, "?")[0]
-		userList = append(userList, User{0, name, uid, headUrl})
+		userList = append(userList, User{0, name, uid, headUrl, cdnUrl})
 	}
 	rd, _ := ioutil.ReadDir("data")
 	for _, fi := range rd {
 		if !fi.IsDir() && fi.Name() != "sign.json" && fi.Name() != "users.txt" {
 			flag := true
 			for _, u := range userList {
-				if u.Uid == strings.Split(fi.Name(), ".")[0] {
+				if u.Uid == strings.Split(strings.Split(fi.Name(), ".")[0], "-")[0] {
 					flag = false
 				}
 			}
 			if flag {
-				//从github上删除多余的文件
-				ghToken := os.Getenv("GH_TOKEN")
 				if len(ghToken) > 0 {
 					deleteFromGithub(ghToken, "data/"+fi.Name())
 				} else {
@@ -137,7 +139,6 @@ func SaveUserList(bdussArr []string) {
 		log.Fatal(err)
 	}
 	ioutil.WriteFile("data/users.txt", []byte(usersJson), 0666)
-	ghToken := os.Getenv("GH_TOKEN")
 	if len(ghToken) > 0 {
 		pushToGithub(usersJson, ghToken, "data/users.txt")
 	} else {
@@ -224,7 +225,7 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 		name = nameShow
 	}
 	if os.Getenv("AUTH_AES_KEY") != "" {
-		WriteSignDetailData(pageData, User{int64(totalCount), name, uid, headUrl})
+		WriteSignDetailData(pageData, User{int64(totalCount), name, uid, headUrl, ""})
 	}
 	st := SignTable{uid, name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan}
 	sts <- st
@@ -276,10 +277,11 @@ type SignDetailResult struct {
 	User User         `json:"user"`
 }
 type User struct {
-	Total   int64  `json:"total"`
-	Name    string `json:"name"`
-	Uid     string `json:"uid"`
-	HeadUrl string `json:"head_url"`
+	Total      int64  `json:"total"`
+	Name       string `json:"name"`
+	Uid        string `json:"uid"`
+	HeadUrl    string `json:"head_url"`
+	CDNDataUrl string `json:"cdn_data_url"`
 }
 
 func TelegramNOtifyResult(ms string) {
@@ -968,6 +970,7 @@ func pushToGithub(data, token, path string) error {
 	if er != nil || repo == nil {
 		log.Println("get github repository error, create "+path, er)
 		content.Content = []byte(data)
+		content.SHA = nil
 		_, _, err := client.Repositories.CreateFile(ctx, user.GetLogin(), r, path, content)
 		if err != nil {
 			log.Println(err)
@@ -1011,6 +1014,17 @@ func deleteFromGithub(token, path string) error {
 		return err
 	}
 	return nil
+}
+func GetRepoName(token string) string {
+	r := "Tieba-Sign-Actions"
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+	user, _, _ := client.Users.Get(ctx, "")
+	return user.GetLogin() + "/" + r
 }
 
 type DoWorkPieceFunc func(piece int)
