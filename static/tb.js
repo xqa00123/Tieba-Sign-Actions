@@ -15,6 +15,7 @@ if(!key){
     );
 }else{
     uid = initMenu(key, uid);
+    console.log(uid);
     initDetail(pageNo);
 }
 function getDateDiff (dateTimeStamp) {
@@ -92,8 +93,9 @@ function initMenu(key, uid){
             if(!uid){
                 uid = data[0].uid;
             }
+            console.log(data)
             $$.each(data, function (i, item) {
-                var url = "/tb.html?k="+key+"&uid="+uid;
+                var url = "/tb.html?k="+key+"&uid="+item.uid
                 var html = "";
                 var active = "";
                 if(uid == item.uid){
