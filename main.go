@@ -136,7 +136,7 @@ func SaveUserList(bdussArr []string) []User {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ioutil.WriteFile("data/users.txt", []byte(usersJson), 0666)
+	//ioutil.WriteFile("data/users.txt", []byte(usersJson), 0666)
 	if len(ghToken) > 0 {
 		pushToGithub(usersJson, ghToken, "data/users.txt")
 	} else {
@@ -925,7 +925,7 @@ func WriteSignData(rs []SignTable) {
 	}
 	sd := SignData{rs, tuc, ttc, tsc, tvc, tbec, tsuc}
 	signJson, _ := jsoniter.MarshalToString(sd)
-	ioutil.WriteFile("data/sign.json", []byte(signJson), 0666)
+	//ioutil.WriteFile("data/sign.json", []byte(signJson), 0666)
 	ghToken := os.Getenv("GH_TOKEN")
 	if len(ghToken) > 0 {
 		pushToGithub(signJson, ghToken, "data/sign.json")
@@ -943,8 +943,7 @@ func WriteSignDetailData(pd []PageDetail, user User) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	ioutil.WriteFile("data/"+user.CDNDataUrl+".txt", []byte(ciphertext), 0666)
+	//ioutil.WriteFile("data/"+user.CDNDataUrl+".txt", []byte(ciphertext), 0666)
 	ghToken := os.Getenv("GH_TOKEN")
 	if len(ghToken) > 0 {
 		pushToGithub(ciphertext, ghToken, "data/"+user.CDNDataUrl+".txt")
