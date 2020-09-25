@@ -7,13 +7,10 @@ var data = null;
 var status = 0;
 var cdnDataUrl = "";
 if(!key){
-    mdui.prompt('访问受到限制，您需要提供访问密码才能查看。', '<i class="mdui-icon material-icons">&#xe899;</i>',
-        function (value) {
-            window.location.href = changeURLArg(href,'k', value);
-        },
-        function (value) {
-        },{"cancelText":"取消","confirmText":"确认"}
-    );
+    var value = prompt("访问受到限制，您需要提供访问密码才能查看。","");
+    if (value != null && value != ""){
+        window.location.href = changeURLArg(href,'k', value);
+    }
 }else{
     uid = initMenu(key, uid);
     initDetail(pageNo);
