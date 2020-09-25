@@ -100,7 +100,7 @@ function initMenu(key, uid){
                 var active = "";
                 if(uid == item.uid){
                     active = "mdui-list-item-active";
-                    cdnDataUrl = data[0].cdn_data_url;
+                    cdnDataUrl = item.cdn_data_url;
                 }
                 html += "<li class=\"mdui-list-item mdui-ripple "+active+"\" onclick=\"javascript:location.href=\'"+url+"\'\">"+
                 "                <div class=\"mdui-list-item-avatar\"><img src=\""+item.head_url+"\"/></div>"+

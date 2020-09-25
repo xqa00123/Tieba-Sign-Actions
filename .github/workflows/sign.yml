@@ -29,4 +29,5 @@ jobs:
           REPLY: ${{ secrets.REPLY }}
           AUTH_AES_KEY: ${{ secrets.AUTH_AES_KEY }}
           HOME_URL: ${{ secrets.HOME_URL }}
+          SCKEY: ${{ secrets.SCKEY }}
         run: go run main.go -cronType si

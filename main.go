@@ -61,6 +61,7 @@ func exec() {
 			}
 		})
 		close(sts)
+		//将签到结果上传到github仓库
 		if os.Getenv("AUTH_AES_KEY") != "" {
 			userList = SaveUserList(bdussArr)
 		}
@@ -70,12 +71,14 @@ func exec() {
 				WriteSignDetailData(st.PageData, User{int64(st.Total), st.Name, st.Uid, st.HeadUrl, GetUidWithRandom(st.Uid, userList)})
 			}
 		}
-		ms := GenerateSignResult(0, rs)
+		WriteSignData(rs)
+		ms := GenerateSignResult(0, rs, false)
 		fmt.Println(ms + "\n")
 		//telegram通知
-		TelegramNOtifyResult(GenerateSignResult(1, rs))
-		//将签到结果写入json文件
-		WriteSignData(rs)
+		TelegramNotifyResult(GenerateSignResult(1, rs, false))
+		//Server酱通知
+		ServerJiangNotify(GenerateSignResult(1, rs, true))
+
 	} else {
 		replys := os.Getenv("REPLY")
 		if replys != "" {
@@ -88,12 +91,12 @@ func exec() {
 				portrait := jsoniter.Get([]byte(profile), "user").Get("portrait").ToString()
 				name := jsoniter.Get([]byte(profile), "user").Get("name").ToString()
 				if isBan(portrait) {
-					TelegramNOtifyResult(name + "[已被封禁]：\n回帖失败")
+					TelegramNotifyResult(name + "[已被封禁]：\n回帖失败")
 				} else {
 					tbName := ri.TbName
 					tid := ri.Tid
 					rr := reply(ri.Bduss, GetTbs(ri.Bduss), tid, GetFid(tbName), tbName, RandMsg(), 2)
-					TelegramNOtifyResult(name + "[正常]：\n" + rr)
+					TelegramNotifyResult(name + "[正常]：\n" + rr)
 				}
 			}
 		}
@@ -121,19 +124,10 @@ func SaveUserList(bdussArr []string) []User {
 	rd, _ := ioutil.ReadDir("data")
 	for _, fi := range rd {
 		if !fi.IsDir() && fi.Name() != "sign.json" && fi.Name() != "users.txt" {
-			flag := true
-			for _, u := range userList {
-				if u.Uid == strings.Split(strings.Split(fi.Name(), ".")[0], "-")[0] {
-					flag = false
-				}
-			}
-			if flag {
-				if len(ghToken) > 0 {
-					deleteFromGithub(ghToken, "data/"+fi.Name())
-				} else {
-					fmt.Println("没有配置$GH_TOKEN")
-				}
-
+			if len(ghToken) > 0 {
+				deleteFromGithub(ghToken, "data/"+fi.Name())
+			} else {
+				fmt.Println("没有配置$GH_TOKEN")
 			}
 		}
 	}
@@ -296,11 +290,11 @@ type User struct {
 	CDNDataUrl string `json:"cdn_data_url"`
 }
 
-func TelegramNOtifyResult(ms string) {
+func TelegramNotifyResult(ms string) {
 	token := os.Getenv("TELEGRAM_APITOKEN")
 	chectId := os.Getenv("TELEGRAM_CHAT_ID")
 	if token == "" || chectId == "" {
-		log.Println("如需开启telegram通知，请设置环境变量ELEGRAM_APITOKEN和TELEGRAM_CHAT_ID")
+		log.Println("[Telegram]通知：关闭")
 	} else {
 		bot, err := tgbotapi.NewBotAPI(token)
 		if err != nil {
@@ -311,15 +305,36 @@ func TelegramNOtifyResult(ms string) {
 		//log.Println("Authorized on account %s", bot.Self.UserName)
 		msg := tgbotapi.NewMessage(chectIdInt64, ms)
 		bot.Send(msg)
+		log.Println("[Telegram]通知：成功")
+	}
+}
+func ServerJiangNotify(ms string) {
+
+	SCKEY := os.Getenv("SCKEY")
+	if SCKEY == "" {
+		log.Println("[Server酱]通知：关闭")
+	} else {
+		var postData = map[string]interface{}{
+			"text": "[T-S-A]签到结果-" + time.Now().Format("20060102"),
+			"desp": ms,
+		}
+		result, error := Fetch(fmt.Sprintf("https://sc.ftqq.com/%s.send", SCKEY), postData, "", "")
+		if error == nil && jsoniter.Get([]byte(result), "errno").ToInt() == 0 {
+			log.Println("[Server酱]通知：成功")
+		}
 	}
 }
 
-func GenerateSignResult(t int, rs []SignTable) string {
-	s := "贴吧ID: " + strconv.Itoa(len(rs)) + "\n"
+func GenerateSignResult(t int, rs []SignTable, isSJ bool) string {
+	newLine := "\n"
+	if isSJ {
+		newLine += "\n"
+	}
+	s := "贴吧ID: " + strconv.Itoa(len(rs)) + newLine
 	if len(rs) == 1 && t == 0 {
-		s = "贴吧ID: " + HideName(rs[0].Name) + "\n"
+		s = "贴吧ID: " + HideName(rs[0].Name) + newLine
 	} else if len(rs) == 1 && t == 1 {
-		s = "贴吧ID: " + rs[0].Name + "\n"
+		s = "贴吧ID: " + rs[0].Name + newLine
 	}
 	total := []string{}
 	Signed := []string{}
@@ -332,9 +347,9 @@ func GenerateSignResult(t int, rs []SignTable) string {
 	for i, r := range rs {
 		if len(rs) > 1 {
 			if t == 0 {
-				s += "\t" + strconv.Itoa(i+1) + ". " + HideName(r.Name) + "\n"
+				s += "\t" + strconv.Itoa(i+1) + ". " + HideName(r.Name) + newLine
 			} else {
-				s += "\t" + strconv.Itoa(i+1) + ". " + r.Name + "\n"
+				s += "\t" + strconv.Itoa(i+1) + ". " + r.Name + newLine
 			}
 		}
 		total = append(total, strconv.Itoa(r.Total))
@@ -346,14 +361,14 @@ func GenerateSignResult(t int, rs []SignTable) string {
 		wk = append(wk, r.Wenku)
 		zd = append(zd, r.Zhidao)
 	}
-	s += "总数:" + strings.Join(total, "‖") + "\n"
-	s += "已签到:" + strings.Join(Signed, "‖") + "\n"
-	s += "补签:" + strings.Join(Bq, "‖") + "\n"
-	s += "异常:" + strings.Join(Excep, "‖") + "\n"
-	s += "黑名单:" + strings.Join(Black, "‖") + "\n"
-	s += "名人堂助攻 :" + strings.Join(Support, "‖") + "\n"
-	s += "文库:" + strings.Join(wk, "‖") + "\n"
-	s += "知道:" + strings.Join(zd, "‖") + "\n"
+	s += "总数:" + strings.Join(total, "‖") + newLine
+	s += "已签到:" + strings.Join(Signed, "‖") + newLine
+	s += "补签:" + strings.Join(Bq, "‖") + newLine
+	s += "异常:" + strings.Join(Excep, "‖") + newLine
+	s += "黑名单:" + strings.Join(Black, "‖") + newLine
+	s += "名人堂助攻 :" + strings.Join(Support, "‖") + newLine
+	s += "文库:" + strings.Join(wk, "‖") + newLine
+	s += "知道:" + strings.Join(zd, "‖") + newLine
 	if os.Getenv("AUTH_AES_KEY") != "" && os.Getenv("HOME_URL") != "" {
 		url := os.Getenv("HOME_URL") + "/tb.html?k=" + os.Getenv("AUTH_AES_KEY")
 		body, err := Fetch("https://api.d5.nz/api/dwz/url.php?url="+url, nil, "", "")
