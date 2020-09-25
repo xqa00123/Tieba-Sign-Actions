@@ -38,7 +38,11 @@ func init() {
 
 func main() {
 	flag.Parse()
-	exec()
+	//exec()
+	CDNDataUrl := "https://tb-act.tk/data/858737185.txt"
+	strings.LastIndex(CDNDataUrl, "/")
+	ss := strings.Split(CDNDataUrl, "/")
+	fmt.Println(strings.Split(ss[len(ss)-1], ".")[0])
 }
 func exec() {
 	bdusss := os.Getenv("BDUSS")
@@ -46,9 +50,7 @@ func exec() {
 		log.Println("环境变量必须设置BDUSS")
 	}
 	bdussArr := strings.Split(bdusss, "\n")
-	if os.Getenv("AUTH_AES_KEY") != "" {
-		SaveUserList(bdussArr)
-	}
+	userList := []User{}
 	if cronType == "si" {
 		rs := []SignTable{}
 		sts := make(chan SignTable, 5000)
@@ -56,15 +58,21 @@ func exec() {
 			bduss := bdussArr[piece]
 			bdussMd5 := StrToMD5(bduss)
 			if !CheckBdussValid(bduss) {
-				st := SignTable{"", "", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0}
+				st := SignTable{"", "", bdussMd5, 0, 0, 0, 0, 0, "未签到", "未签到", 0, "", false, time.Now().UnixNano() / 1e6, 0, nil}
 				sts <- st
 			} else {
 				OneBtnToSign(bduss, sts)
 			}
 		})
 		close(sts)
+		if os.Getenv("AUTH_AES_KEY") != "" {
+			userList = SaveUserList(bdussArr)
+		}
 		for st := range sts {
 			rs = append(rs, st)
+			if os.Getenv("AUTH_AES_KEY") != "" {
+				WriteSignDetailData(st.PageData, User{int64(st.Total), st.Name, st.Uid, st.HeadUrl, GetUidWithRandom(st.Uid, userList)})
+			}
 		}
 		ms := GenerateSignResult(0, rs)
 		fmt.Println(ms + "\n")
@@ -96,7 +104,7 @@ func exec() {
 	}
 
 }
-func SaveUserList(bdussArr []string) {
+func SaveUserList(bdussArr []string) []User {
 	userList := []User{}
 	//从github上删除多余的文件
 	ghToken := os.Getenv("GH_TOKEN")
@@ -144,6 +152,7 @@ func SaveUserList(bdussArr []string) {
 	} else {
 		fmt.Println("没有配置$GH_TOKEN")
 	}
+	return userList
 }
 func isBan(id string) bool {
 	r, _ := Fetch(fmt.Sprintf("https://tieba.baidu.com/home/main?id=%s&fr=userbar", id), nil, "", "")
@@ -224,11 +233,18 @@ func OneBtnToSign(bduss string, sts chan SignTable) {
 	if nameShow != "" {
 		name = nameShow
 	}
-	if os.Getenv("AUTH_AES_KEY") != "" {
-		WriteSignDetailData(pageData, User{int64(totalCount), name, uid, headUrl, ""})
-	}
-	st := SignTable{uid, name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan}
+	st := SignTable{uid, name, bdussMd5, totalCount, signCount, bqCount, excepCount, blackCount, wk, zd, supCount, headUrl, true, time.Now().UnixNano() / 1e6, timespan, pageData}
 	sts <- st
+}
+func GetUidWithRandom(uid string, userList []User) string {
+	for _, u := range userList {
+		if u.Uid == uid {
+			strings.LastIndex(u.CDNDataUrl, "/")
+			ss := strings.Split(u.CDNDataUrl, "/")
+			return strings.Split(ss[len(ss)-1], ".")[0]
+		}
+	}
+	return uid
 }
 func SyncSignTieBa(tb LikedTieba, bduss string, tbs string, chs chan ChanSignResult) ChanSignResult {
 	signResult := SignOneTieBa(tb.Name, tb.Id, bduss, tbs)
@@ -383,21 +399,22 @@ func Bq(tbName string, fid string, bduss string, tbs string) int {
 }
 
 type SignTable struct {
-	Uid      string `json:"uid"`
-	Name     string `json:"name"`
-	BdussMd5 string `json:"bduss_md5"`
-	Total    int    `json:"total"`
-	Signed   int    `json:"signed"`
-	Bq       int    `json:"bq"`
-	Excep    int    `json:"excep"`
-	Black    int    `json:"black"`
-	Wenku    string `json:"wenku"`
-	Zhidao   string `json:"zhidao"`
-	Support  int    `json:"support"`
-	HeadUrl  string `json:"head_url"`
-	IsValid  bool   `json:"is_valid"`
-	SignTime int64  `json:"sign_time"`
-	Timespan int64  `json:"timespan"`
+	Uid      string       `json:"uid"`
+	Name     string       `json:"name"`
+	BdussMd5 string       `json:"bduss_md5"`
+	Total    int          `json:"total"`
+	Signed   int          `json:"signed"`
+	Bq       int          `json:"bq"`
+	Excep    int          `json:"excep"`
+	Black    int          `json:"black"`
+	Wenku    string       `json:"wenku"`
+	Zhidao   string       `json:"zhidao"`
+	Support  int          `json:"support"`
+	HeadUrl  string       `json:"head_url"`
+	IsValid  bool         `json:"is_valid"`
+	SignTime int64        `json:"sign_time"`
+	Timespan int64        `json:"timespan"`
+	PageData []PageDetail `json:"page_data"`
 }
 
 type SignResult struct {
