@@ -38,11 +38,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	//exec()
-	CDNDataUrl := "https://tb-act.tk/data/858737185.txt"
-	strings.LastIndex(CDNDataUrl, "/")
-	ss := strings.Split(CDNDataUrl, "/")
-	fmt.Println(strings.Split(ss[len(ss)-1], ".")[0])
+	exec()
 }
 func exec() {
 	bdusss := os.Getenv("BDUSS")
