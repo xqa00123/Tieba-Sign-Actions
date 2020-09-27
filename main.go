@@ -371,10 +371,10 @@ func GenerateSignResult(t int, rs []SignTable, isSJ bool) string {
 	s += "知道:" + strings.Join(zd, "‖") + newLine
 	if os.Getenv("AUTH_AES_KEY") != "" && os.Getenv("HOME_URL") != "" {
 		url := os.Getenv("HOME_URL") + "/tb.html?k=" + os.Getenv("AUTH_AES_KEY")
-		body, err := Fetch("https://api.d5.nz/api/dwz/url.php?url="+url, nil, "", "")
+		/*body, err := Fetch("https://api.d5.nz/api/dwz/url.php?url="+url, nil, "", "")
 		if err == nil && jsoniter.Get([]byte(body), "code").ToString() == "200" {
 			url = jsoniter.Get([]byte(body), "url").ToString()
-		}
+		}*/
 		s += "签到详情:" + url
 	}
 	return s
