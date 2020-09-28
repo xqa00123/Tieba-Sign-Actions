@@ -994,7 +994,7 @@ func pushNotifyCount() {
 		notifyedCount, _ := strconv.Atoi(string(ncBlob))
 		notifyedCount++
 		if notifyedCount == 3 {
-			notifyedCount = 1
+			notifyedCount = 0
 		}
 		pushToGithub(strconv.Itoa(notifyedCount), os.Getenv("GH_TOKEN"), "data/nc")
 	}
