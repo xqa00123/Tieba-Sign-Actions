@@ -30,4 +30,5 @@ jobs:
           AUTH_AES_KEY: ${{ secrets.AUTH_AES_KEY }}
           HOME_URL: ${{ secrets.HOME_URL }}
           SCKEY: ${{ secrets.SCKEY }}
+          NOTIFY_COUNT: ${{ secrets.NOTIFY_COUNT }}
         run: go run main.go -cronType si

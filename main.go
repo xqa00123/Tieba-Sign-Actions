@@ -967,20 +967,22 @@ func Exists(path string) bool {
 }
 func isNotify() bool {
 	nc := os.Getenv("NOTIFY_COUNT")
+	count := 1
 	if nc != "" {
 		c, err := strconv.Atoi(nc)
 		if err != nil {
 			log.Println("$NOTIFY_COUNT应该为数值类型")
-			c = 1
+		} else {
+			count = c
 		}
-		if !Exists("data/nc") {
-			return true
-		}
-		ncBlob, _ := ioutil.ReadFile("data/nc")
-		notifyedCount, _ := strconv.Atoi(string(ncBlob))
-		if notifyedCount < c {
-			return true
-		}
+	}
+	if !Exists("data/nc") {
+		return true
+	}
+	ncBlob, _ := ioutil.ReadFile("data/nc")
+	notifyedCount, _ := strconv.Atoi(string(ncBlob))
+	if notifyedCount < count {
+		return true
 	}
 	return false
 }
