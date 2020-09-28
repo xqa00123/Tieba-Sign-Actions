@@ -61,23 +61,27 @@ func exec() {
 			}
 		})
 		close(sts)
-		//将签到结果上传到github仓库
-		if os.Getenv("AUTH_AES_KEY") != "" {
-			userList = SaveUserList(bdussArr)
-		}
-		for st := range sts {
-			rs = append(rs, st)
-			if os.Getenv("AUTH_AES_KEY") != "" {
-				WriteSignDetailData(st.PageData, User{int64(st.Total), st.Name, st.Uid, st.HeadUrl, GetUidWithRandom(st.Uid, userList)})
-			}
-		}
-		WriteSignData(rs)
 		ms := GenerateSignResult(0, rs, false)
 		fmt.Println(ms + "\n")
-		//telegram通知
-		TelegramNotifyResult(GenerateSignResult(1, rs, false))
-		//Server酱通知
-		ServerJiangNotify(GenerateSignResult(1, rs, true))
+		if isNotify() {
+			//将签到结果上传到github仓库
+			if os.Getenv("AUTH_AES_KEY") != "" {
+				userList = SaveUserList(bdussArr)
+			}
+			for st := range sts {
+				rs = append(rs, st)
+				if os.Getenv("AUTH_AES_KEY") != "" {
+					WriteSignDetailData(st.PageData, User{int64(st.Total), st.Name, st.Uid, st.HeadUrl, GetUidWithRandom(st.Uid, userList)})
+				}
+			}
+			//telegram通知
+			TelegramNotifyResult(GenerateSignResult(1, rs, false))
+			//Server酱通知
+			ServerJiangNotify(GenerateSignResult(1, rs, true))
+			//通知完成更新通知次数
+			pushNotifyCount()
+			WriteSignData(rs)
+		}
 
 	} else {
 		replys := os.Getenv("REPLY")
@@ -123,7 +127,7 @@ func SaveUserList(bdussArr []string) []User {
 	}
 	rd, _ := ioutil.ReadDir("data")
 	for _, fi := range rd {
-		if !fi.IsDir() && fi.Name() != "sign.json" && fi.Name() != "users.txt" {
+		if !fi.IsDir() && fi.Name() != "sign.json" && fi.Name() != "users.txt" && fi.Name() != "nc" {
 			if len(ghToken) > 0 {
 				deleteFromGithub(ghToken, "data/"+fi.Name())
 			} else {
@@ -949,6 +953,45 @@ func WriteSignDetailData(pd []PageDetail, user User) {
 		pushToGithub(ciphertext, ghToken, "data/"+user.CDNDataUrl+".txt")
 	} else {
 		fmt.Println("没有配置$GH_TOKEN")
+	}
+}
+func Exists(path string) bool {
+	_, err := os.Stat(path) //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
+}
+func isNotify() bool {
+	nc := os.Getenv("NOTIFY_COUNT")
+	if nc != "" {
+		c, err := strconv.Atoi(nc)
+		if err != nil {
+			log.Println("$NOTIFY_COUNT应该为数值类型")
+			c = 1
+		}
+		if !Exists("data/nc") {
+			return true
+		}
+		ncBlob, _ := ioutil.ReadFile("data/nc")
+		notifyedCount, _ := strconv.Atoi(string(ncBlob))
+		if notifyedCount < c {
+			return true
+		}
+	}
+	return false
+}
+func pushNotifyCount() {
+	if !Exists("data/nc") && os.Getenv("GH_TOKEN") != "" {
+		pushToGithub("1", os.Getenv("GH_TOKEN"), "data/nc")
+	} else {
+		ncBlob, _ := ioutil.ReadFile("data/nc")
+		notifyedCount, _ := strconv.Atoi(string(ncBlob))
+		notifyedCount++
+		pushToGithub(strconv.Itoa(notifyedCount), os.Getenv("GH_TOKEN"), "data/nc")
 	}
 }
 

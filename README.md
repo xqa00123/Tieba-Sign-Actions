@@ -40,6 +40,7 @@ TELEGRAM_CHAT_ID | 电报通知的user_id | 可选 |
 AUTH_AES_KEY | 查询详情的AES秘钥，16位，由字母和数字组成，填写此选项程序将开启签到详情记录, [随机密码生成器](https://suijimimashengcheng.51240.com/)| 可选 |
 HOME_URL | 你的云签网址，注意地址末尾请不要输入"/"，用于发送查看签到详情的地址 | 可选 |
 SCKEY | 采用[Server酱](http://sc.ftqq.com/)推送签到结果的秘钥 | 可选 |
+NOTIFY_COUNT  | 通知/签到数据更新 次数，默认每天通知一次（第一次），不影响多次签到，只是不再更新或通知结果 | 可选 |
 
 1. 打开Tieba-Sign-Actions > Settings > Secrets > New secret
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-2-1.png)
