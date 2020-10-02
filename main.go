@@ -981,21 +981,23 @@ func isNotify() bool {
 	}
 	ncBlob, _ := ioutil.ReadFile("data/nc")
 	date := strings.Split(string(ncBlob), ":")[0]
-	notifyedCount, err := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
-	if err != nil {
-		return true
-	}
-	timelocal, _ := time.LoadLocation("Asia/Shanghai")
-	time.Local = timelocal
-	curNow := time.Now().Local()
-	curDate := curNow.Format("2006-01-02")
-	if date != curDate {
-		return true
-	} else {
-		if notifyedCount < count {
+	if len(strings.Split(string(ncBlob), ":")) > 1 {
+		notifyedCount, _ := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
+		timelocal, _ := time.LoadLocation("Asia/Shanghai")
+		time.Local = timelocal
+		curNow := time.Now().Local()
+		curDate := curNow.Format("2006-01-02")
+		if date != curDate {
 			return true
+		} else {
+			if notifyedCount < count {
+				return true
+			}
 		}
+	} else {
+		return true
 	}
+
 	return false
 }
 func pushNotifyCount() {
@@ -1008,16 +1010,16 @@ func pushNotifyCount() {
 	} else {
 		ncBlob, _ := ioutil.ReadFile("data/nc")
 		date := strings.Split(string(ncBlob), ":")[0]
-		notifyedCount, err := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
-		if err != nil {
-			pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
-		} else {
+		if len(strings.Split(string(ncBlob), ":")) > 1 {
+			notifyedCount, _ := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
 			if date != curDate {
 				pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
 			} else {
 				notifyedCount++
 				pushToGithub(date+":"+strconv.Itoa(notifyedCount), os.Getenv("GH_TOKEN"), "data/nc")
 			}
+		} else {
+			pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
 		}
 	}
 }
