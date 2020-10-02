@@ -10,7 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/go-github/github"
 	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/oauth2"
@@ -980,23 +980,45 @@ func isNotify() bool {
 		return true
 	}
 	ncBlob, _ := ioutil.ReadFile("data/nc")
-	notifyedCount, _ := strconv.Atoi(string(ncBlob))
-	if notifyedCount < count {
+	date := strings.Split(string(ncBlob), ":")[0]
+	notifyedCount, err := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
+	if err != nil {
 		return true
+	}
+	timelocal, _ := time.LoadLocation("Asia/Shanghai")
+	time.Local = timelocal
+	curNow := time.Now().Local()
+	curDate := curNow.Format("2006-01-02")
+	if date != curDate {
+		return true
+	} else {
+		if notifyedCount < count {
+			return true
+		}
 	}
 	return false
 }
 func pushNotifyCount() {
+	timelocal, _ := time.LoadLocation("Asia/Shanghai")
+	time.Local = timelocal
+	curNow := time.Now().Local()
+	curDate := curNow.Format("2006-01-02")
 	if !Exists("data/nc") && os.Getenv("GH_TOKEN") != "" {
-		pushToGithub("1", os.Getenv("GH_TOKEN"), "data/nc")
+		pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
 	} else {
 		ncBlob, _ := ioutil.ReadFile("data/nc")
-		notifyedCount, _ := strconv.Atoi(string(ncBlob))
-		notifyedCount++
-		if notifyedCount == 3 {
-			notifyedCount = 0
+		date := strings.Split(string(ncBlob), ":")[0]
+		notifyedCount, err := strconv.Atoi(strings.Split(string(ncBlob), ":")[1])
+		if err != nil {
+			pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
+		} else {
+			if date != curDate {
+				pushToGithub(curDate+":"+"1", os.Getenv("GH_TOKEN"), "data/nc")
+			} else {
+				notifyedCount++
+				pushToGithub(date+":"+strconv.Itoa(notifyedCount), os.Getenv("GH_TOKEN"), "data/nc")
+			}
 		}
-		pushToGithub(strconv.Itoa(notifyedCount), os.Getenv("GH_TOKEN"), "data/nc")
 	}
 }
 
