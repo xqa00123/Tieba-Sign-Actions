@@ -61,8 +61,6 @@ func exec() {
 			}
 		})
 		close(sts)
-		ms := GenerateSignResult(0, rs, false)
-		fmt.Println(ms + "\n")
 		if isNotify() {
 			//将签到结果上传到github仓库
 			if os.Getenv("AUTH_AES_KEY") != "" {
@@ -74,6 +72,8 @@ func exec() {
 					WriteSignDetailData(st.PageData, User{int64(st.Total), st.Name, st.Uid, st.HeadUrl, GetUidWithRandom(st.Uid, userList)})
 				}
 			}
+			ms := GenerateSignResult(0, rs, false)
+			fmt.Println(ms + "\n")
 			//telegram通知
 			TelegramNotifyResult(GenerateSignResult(1, rs, false))
 			//Server酱通知
@@ -81,6 +81,12 @@ func exec() {
 			//通知完成更新通知次数
 			pushNotifyCount()
 			WriteSignData(rs)
+		} else {
+			for st := range sts {
+				rs = append(rs, st)
+			}
+			ms := GenerateSignResult(0, rs, false)
+			fmt.Println(ms + "\n")
 		}
 
 	} else {
