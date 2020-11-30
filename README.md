@@ -25,7 +25,7 @@ Demo：https://tb-act.tk
 ![avatar](https://cdn.jsdelivr.net/gh/libsgh/Tieba-Sign-Actions@master/doc/2-1-2.png)
 2. 在线获取工具,扫码方式更安全
 - http://bduss.imyfan.com/
-- http://noki.tk/bduss
+- https://noki.top/bduss
 - http://tool.cccyun.cc/tool/bduss/index2.html
 ### 设置 Secrets
 Secrets对照表
